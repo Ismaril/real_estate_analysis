@@ -1,3 +1,4 @@
+import os
 import random
 import time
 import pandas as pd
@@ -12,91 +13,93 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36",
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1",
 ]
-DRIVER_ADDRESS = "C:/Users/lazni/Downloads/chromedriver.exe"
+DRIVER_ADDRESS = "chrome_driver/chromedriver.exe"
 SITE_MAP = "https://www.sreality.cz/sitemap.xml"
+DOWNLOADS = "C:/Users/lazni/Downloads"
 
 
-class Scraper:
-    @staticmethod
-    def _chrome_driver(headless=True, driver_address=DRIVER_ADDRESS):
-        # with this option set to True desktop chrome application will not pop up
-        options = webdriver.ChromeOptions()
-        options.headless = headless
+def _chrome_driver(headless=True, driver_address=DRIVER_ADDRESS):
+    # with this option set to True desktop chrome application will not pop up
+    options = webdriver.ChromeOptions()
+    options.headless = headless
 
-        # this driver will act as a new desktop window of chrome (if not headless) and will load dynamic
-        #   website, before it is scraped. Dynamic websites cannot be scraped with python requests. Lots of
-        #   info would miss otherwise.
-        driver = webdriver.Chrome(driver_address, options=options)
-        return driver
-
-    @staticmethod
-    def site_map(driver=None):
-        xml_docs = pd.read_xml(
-            requests.get(SITE_MAP, headers={"User-Agent": random.choice(USER_AGENTS)}).text
-        )["loc"]
-        for url in xml_docs:
-            # get url of a xml containing links to websites of all given properties
-            driver.get(url)
-            time.sleep(4)
-
-        # exit the artificial browser
-        driver.quit()
-
-        nr_of_xml_docs = len(xml_docs)
-
-        for i in range(nr_of_xml_docs):
-            path = "C:/Users/lazni/Downloads"
-            patoolib.extract_archive(f"{path}/sitemap{i + 1}.xml.gz",
-                                     outdir="C:/Users/lazni/Downloads")
-
-            with open(f"{path}/sitemap{i + 1}.xml", "r") as file:
-                data = file.read()
-                data = pd.read_xml(data)
-                data.to_csv(f"{path}/urls_{i + 1}.csv")
-
-    @staticmethod
-    def scrapping(driver=None):
-        # get url of a desired website
-        url = "https://www.sreality.cz/detail/prodej/byt/3+kk/praha-zabehlice-hlavni/697932"
-        driver.get(url)
-
-        soup = BeautifulSoup(driver.page_source, "lxml")
-
-        # get labels (generally for all properties) from a given website
-        elements = soup.find_all("label", class_="param-label ng-binding")
-        # Example: <label class="param-label ng-binding">Celková cena:</label>
-        labels = []
-        for item in elements:
-            item = BeautifulSoup(item.text, 'html.parser')
-            labels.append(item.text)
-
-        # get all the information that corresponds to a given property label on the website
-        elements = soup.find_all("span", class_="ng-binding ng-scope")
-        # Example: <span ng-if="item.type != 'link'" class="ng-binding ng-scope">5&nbsp;799&nbsp;000 Kč za nemovitost</span>
-        information = []
-        for item in elements:
-            item = BeautifulSoup(item.text, 'html.parser')
-            information.append(item.text)
-
-        # visualise the outpu
-        for label, info in zip(labels, information):
-            print(f"{label} {info}")
-
-        # exit the artificial browser
-        driver.quit()
-
-    @classmethod
-    def save_to_csv(cls):
-        pass
-
-    @classmethod
-    def delete_unwanted_files(cls):
-        pass
-
-    @classmethod
-    def main(cls):
-        cls.site_map(cls._chrome_driver(headless=False))
+    # this driver will act as a new desktop window of chrome (if not headless) and will load dynamic
+    #   website, before it is scraped. Dynamic websites cannot be scraped with python requests. Lots of
+    #   info would miss otherwise.
+    driver = webdriver.Chrome(driver_address, options=options)
+    return driver
 
 
-# zavorky nebo ne?
-Scraper().main()
+def site_map_scraping(driver=None):
+    xml_docs = pd.read_xml(
+        requests.get(SITE_MAP, headers={"User-Agent": random.choice(USER_AGENTS)}).text)["loc"]
+
+    for url in xml_docs:
+        # get url of a xml containing links to websites of all given properties, at a time of
+        #    creation of this file there were like 5 links
+        """driver.get(url)"""
+        time.sleep(4)
+
+    # exit the artificial browser
+    driver.quit()
+
+    nr_of_xml_docs = len(xml_docs)
+    all_links_dataframe = pd.DataFrame()
+    for i in range(nr_of_xml_docs):
+        # unzip all files that contain links to properties
+        """patoolib.extract_archive(f"{DOWNLOADS}/sitemap{i + 1}.xml.gz",
+                                 outdir="C:/Users/lazni/Downloads")"""
+
+        # read files that contain links to properties and put them all in a huge dataset
+        # all_links_dataframe.extend(data["loc"])
+        all_links_dataframe = pd.concat([all_links_dataframe,
+                                         pd.read_xml(f"{DOWNLOADS}/sitemap{i + 1}.xml")])
+
+    pd.DataFrame(all_links_dataframe).to_csv("links_to_properties.csv")
+
+
+def properties_scraping(driver=None):
+    # get url of a desired website
+    url = "https://www.sreality.cz/detail/prodej/byt/3+kk/praha-zabehlice-hlavni/697932"
+    driver.get(url)
+
+    soup = BeautifulSoup(driver.page_source, "lxml")
+
+    # get labels (generally for all properties) from a given website
+    elements = soup.find_all("label", class_="param-label ng-binding")
+    # Example: <label class="param-label ng-binding">Celková cena:</label>
+    labels = []
+    for item in elements:
+        item = BeautifulSoup(item.text, 'html.parser')
+        labels.append(item.text)
+
+    # get all the information that corresponds to a given property label on the website
+    elements = soup.find_all("span", class_="ng-binding ng-scope")
+    # Example: <span ng-if="item.type != 'link'" class="ng-binding ng-scope">5&nbsp;799&nbsp;000 Kč za nemovitost</span>
+    information = []
+    for item in elements:
+        item = BeautifulSoup(item.text, 'html.parser')
+        information.append(item.text)
+
+    # visualise the output
+    for label, info in zip(labels, information):
+        print(f"{label} {info}")
+
+    # exit the artificial browser
+    driver.quit()
+
+
+def delete_unwanted_files():
+    for file in os.listdir(DOWNLOADS):
+        if file.startswith("sitemap"):
+            os.remove(f"{DOWNLOADS}/{file}")
+
+
+def main():
+    site_map_scraping(_chrome_driver(headless=False))
+    print("Sitemap ready")
+    """delete_unwanted_files()"""
+    print("Unwanted files deleted")
+    print("Done")
+
+main()
