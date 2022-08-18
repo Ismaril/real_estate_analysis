@@ -1,14 +1,13 @@
 import os
-import random
 import time
-
+import random
 import numpy as np
 import pandas as pd
 import requests as requests
-from bs4 import BeautifulSoup
-from selenium import common
-from selenium import webdriver
 import patoolib  # work with zipped files
+from selenium import common
+from bs4 import BeautifulSoup
+from selenium import webdriver
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246",
@@ -73,8 +72,16 @@ def delete_unwanted_sitemap_files():
             os.remove(f"{DOWNLOADS}/{file}")
 
 
-def properties_scraping(driver, dataset):
-    data = pd.read_csv(dataset)[:15]
+def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
+    # if some data were already downloaded, continue based on last downloaded index
+    batches = os.listdir("C:/Users/lazni/PycharmProjects/Real_Estate_Analysis/batches")
+    if batches:
+        last_completed_index = int(max(item.split(".")[0] for item in batches))
+        data = pd.read_csv(dataset)[last_completed_index:max_nr_samples]
+
+    # scraping starts for the first time
+    else:
+        data = pd.read_csv(dataset)[:max_nr_samples]
 
     final_dataframe = pd.DataFrame()
     average_iter_time = []
@@ -90,21 +97,22 @@ def properties_scraping(driver, dataset):
             print("Request timed out")
             continue
 
-        # Beautiful soup perhaps gonna return "MarkupResemblesLocatorWarning" but html is actually inputed
+        # Beautiful soup perhaps gonna return "MarkupResemblesLocatorWarning" but html is actually inputted
         #    inside, so it is probably false alarm
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
         # get labels (generally for all properties) from a given website
+        #     Example: <label class="param-label ng-binding">Celková cena:</label>
         elements = soup.find_all("label", class_="param-label ng-binding")
-        # Example: <label class="param-label ng-binding">Celková cena:</label>
         labels = []
         for item in elements:
             item = BeautifulSoup(item.text, 'html.parser')
             labels.append(item.text)
 
         # get all the information that corresponds to a given property label on the website
+        # Example: <span ng-if="item.type != 'link'" class="ng-binding ng-scope">5&nbsp;799&nbsp;000 Kč
+        #     za nemovitost</span>
         elements = soup.find_all("span", class_="ng-binding ng-scope")
-        # Example: <span ng-if="item.type != 'link'" class="ng-binding ng-scope">5&nbsp;799&nbsp;000 Kč za nemovitost</span>
         information = []
         for item in elements:
             item = BeautifulSoup(item.text, 'html.parser')
@@ -113,11 +121,14 @@ def properties_scraping(driver, dataset):
         # put all labels and all info regarding a given reality into final dataset as a new row
         dict_ = {}
 
-        split = link.split("/")
-        dict_["Počet místností:"] = split[6]
-        loc = split[7]
+        link_split = link.split("/")
 
-        location_split = loc.split("-")
+        dict_["Nemovitost:"] = link_split[5]
+
+        dict_["Typ:"] = link_split[6]
+
+        location = link_split[7]
+        location_split = location.split("-")
         dict_["Lokace:"] = location_split[0].title()
 
         for label, info in zip(labels, information):
@@ -131,20 +142,24 @@ def properties_scraping(driver, dataset):
 
         iteration_time = end - start
         average_iter_time.append(iteration_time)
-        print(f"Iteration time: {iteration_time} sec")
+        print(f"Current iteration {i}, Iteration time: {iteration_time:.2f} sec")
+
+        if (i and i % batch_size == 0) or i == data.shape[0] - 1:
+            print(f"Saving batch. Completed iterations total: {i}")  # TODO: index datasetu, pripraveno ve scratchfile
+            final_dataframe.to_csv(f"batches/{i}.csv", encoding="UTF-8")  # TODO: index datasetu, pripraveno ve scratchfile
+            final_dataframe = pd.DataFrame()
 
     # exit the artificial browser
     driver.quit()
 
     print(f"Average time of all iterations: {np.mean(average_iter_time)} sec")
 
-    # save to csv
-    final_dataframe.to_csv("Properties features.csv", encoding="UTF-8")
-
 
 # site_map_scraping(_chrome_driver(headless=False))
 # delete_unwanted_sitemap_files()
-properties_scraping(_chrome_driver(headless=True), "links_to_properties_cleaned.csv")
+properties_scraping(driver=_chrome_driver(headless=True),
+                    dataset="links_to_properties_cleaned.csv",
+                    batch_size=3,
+                    max_nr_samples=20)
 
-
-#todo: nastavit batche ve kterych se budou ukladat scrapovana data
+# C:\Users\lazni\PycharmProjects\Real_Estate_Analysis

@@ -31,11 +31,12 @@ def data_cleaner():
     # find the property type and type of sale
     property_type = []
     type_of_sale = []
-    link: str
+    property_id = []
     for link in data["loc"]:
         split = link.split("/")
         property_type.append(split[5])
         type_of_sale.append(split[4])
+        property_id.append(split[-1])
 
     # get some feeling of property type statistics
     property_type_stats = Counter(property_type)
@@ -51,6 +52,13 @@ def data_cleaner():
     data = data.loc[data["Type of sale:"] != "drazby"]
     data.drop(["Property type:"], axis=1, inplace=True)
     data.drop(["Type of sale:"], axis=1, inplace=True)
+
+    # assign new column
+    property_id = []
+    for link in data["loc"]:
+        split = link.split("/")
+        property_id.append(split[-1])
+    data["id"] = property_id
 
     # save cleaned dataset
     data: pd.DataFrame
