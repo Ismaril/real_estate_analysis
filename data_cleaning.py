@@ -63,7 +63,4 @@ def data_cleaner():
     # save cleaned dataset
     data: pd.DataFrame
     data.to_csv("links_to_properties_cleaned.csv")
-
     print(data)
-
-data_cleaner()
