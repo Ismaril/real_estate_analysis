@@ -20,7 +20,7 @@ SITE_MAP = "https://www.sreality.cz/sitemap.xml"
 DOWNLOADS = "C:/Users/lazni/Downloads"
 
 
-def _chrome_driver(headless=True, driver_address=DRIVER_ADDRESS):
+def chrome_driver(headless=True, driver_address=DRIVER_ADDRESS):
     # with this option set to True desktop chrome application will not pop up
     options = webdriver.ChromeOptions()
     options.headless = headless
@@ -73,10 +73,11 @@ def delete_unwanted_sitemap_files():
 
 
 def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
+    start_global = time.perf_counter()
     # if some data were already downloaded, continue based on last downloaded index
     batches = os.listdir("C:/Users/lazni/PycharmProjects/Real_Estate_Analysis/batches")
     if batches:
-        last_completed_index = int(max(item.split(".")[0] for item in batches))
+        last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
         data = pd.read_csv(dataset)[last_completed_index:max_nr_samples]
 
     # scraping starts for the first time
@@ -86,15 +87,16 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
     final_dataframe = pd.DataFrame()
     average_iter_time = []
 
-    for i, link in enumerate(data["loc"]):
+    for index_session, (link, id_) in enumerate(zip(data["loc"], data["id"])):
         start = time.perf_counter()
+        index_all_data = data.index[data["id"] == id_].tolist()[0]
 
         try:
             # get url of a desired website
             driver.get(link)
             driver.delete_all_cookies()
         except common.exceptions.TimeoutException:
-            print("Request timed out")
+            print("Request timed out", "!" * 60, sep="\n")
             continue
 
         # Beautiful soup perhaps gonna return "MarkupResemblesLocatorWarning" but html is actually inputted
@@ -122,44 +124,39 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
         dict_ = {}
 
         link_split = link.split("/")
-
+        dict_["link"] = link
+        dict_["id"] = id_
         dict_["Nemovitost:"] = link_split[5]
-
         dict_["Typ:"] = link_split[6]
-
         location = link_split[7]
         location_split = location.split("-")
         dict_["Lokace:"] = location_split[0].title()
-
         for label, info in zip(labels, information):
             dict_[label] = info
 
-        dict_["link"] = link
-
-        new_row = pd.DataFrame(dict_, index=[i])
+        new_row = pd.DataFrame(dict_, index=[index_session])
         final_dataframe = pd.concat([final_dataframe, new_row], ignore_index=True)
         end = time.perf_counter()
 
         iteration_time = end - start
         average_iter_time.append(iteration_time)
-        print(f"Current iteration {i}, Iteration time: {iteration_time:.2f} sec")
+        print(f"Iter curr session {index_session}, "
+              f"Iter total: {index_all_data}, "
+              f"Iter time: {iteration_time:.2f} sec")
 
-        if (i and i % batch_size == 0) or i == data.shape[0] - 1:
-            print(f"Saving batch. Completed iterations total: {i}")  # TODO: index datasetu, pripraveno ve scratchfile
-            final_dataframe.to_csv(f"batches/{i}.csv", encoding="UTF-8")  # TODO: index datasetu, pripraveno ve scratchfile
+        if index_session % batch_size == 0 or index_session == data.shape[0] - 1:
+            print(f"Saving batch. Completed iterations total: {index_all_data}", end=f"\n{'-' * 60}\n")
+            final_dataframe.to_csv(f"batches/{index_all_data}.csv", encoding="UTF-8")
             final_dataframe = pd.DataFrame()
 
     # exit the artificial browser
     driver.quit()
+    end_global = time.perf_counter()
+    scraping_time = end_global - start_global
+    print(f"Scraping features took this session: {scraping_time:.2f} sec")
+    print(f"Average time of all iterations: {np.mean(average_iter_time)} sec",
+          "#" * 60,
+          sep="\n")
 
-    print(f"Average time of all iterations: {np.mean(average_iter_time)} sec")
-
-
-# site_map_scraping(_chrome_driver(headless=False))
-# delete_unwanted_sitemap_files()
-properties_scraping(driver=_chrome_driver(headless=True),
-                    dataset="links_to_properties_cleaned.csv",
-                    batch_size=3,
-                    max_nr_samples=20)
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
