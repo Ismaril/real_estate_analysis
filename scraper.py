@@ -78,7 +78,7 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
     batches = os.listdir("C:/Users/lazni/PycharmProjects/Real_Estate_Analysis/batches")
     if batches:
         last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
-        data = pd.read_csv(dataset)[last_completed_index:max_nr_samples]
+        data = pd.read_csv(dataset)[last_completed_index + 1:max_nr_samples]
 
     # scraping starts for the first time
     else:
@@ -122,17 +122,23 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
 
         # put all labels and all info regarding a given reality into final dataset as a new row
         dict_ = {}
-
         link_split = link.split("/")
-        dict_["link"] = link
-        dict_["id"] = id_
+
+        dict_["Link:"] = link
+        dict_["Id:"] = id_
         dict_["Nemovitost:"] = link_split[5]
         dict_["Typ:"] = link_split[6]
         location = link_split[7]
         location_split = location.split("-")
-        dict_["Lokace:"] = location_split[0].title()
+        dict_["Lokace:"] = f"{location_split[0].title()} {location_split[1]} {location_split[2]}"
+
+        valid_columns = ["Celková cena:", "Stavba:", "Stav objektu:",
+                         "Vlastnictví:", "Zlevněno:", "Původní cena:",
+                         "Plocha zastavěná:", "Užitná plocha:", "Plocha pozemku:",
+                         "Plocha zahrady:"]
         for label, info in zip(labels, information):
-            dict_[label] = info
+            if label in valid_columns:
+                dict_[label] = info
 
         new_row = pd.DataFrame(dict_, index=[index_session])
         final_dataframe = pd.concat([final_dataframe, new_row], ignore_index=True)
@@ -144,7 +150,7 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
               f"Iter total: {index_all_data}, "
               f"Iter time: {iteration_time:.2f} sec")
 
-        if index_session % batch_size == 0 or index_session == data.shape[0] - 1:
+        if (index_session and index_session % batch_size == 0) or index_session == data.shape[0] - 1:
             print(f"Saving batch. Completed iterations total: {index_all_data}", end=f"\n{'-' * 60}\n")
             final_dataframe.to_csv(f"batches/{index_all_data}.csv", encoding="UTF-8")
             final_dataframe = pd.DataFrame()
@@ -157,6 +163,5 @@ def properties_scraping(driver, dataset, batch_size=1000, max_nr_samples=None):
     print(f"Average time of all iterations: {np.mean(average_iter_time)} sec",
           "#" * 60,
           sep="\n")
-
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
