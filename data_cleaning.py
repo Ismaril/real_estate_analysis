@@ -3,7 +3,7 @@ import pandas as pd
 from collections import Counter
 
 
-def data_cleaner():
+def clean_raw_data():
     data = pd.read_csv("links_to_properties.csv")
 
     # drop some first unwanted stuff
@@ -64,3 +64,11 @@ def data_cleaner():
     data: pd.DataFrame
     data.to_csv("links_to_properties_cleaned.csv")
     print(data)
+
+
+def clean_feature_data():
+    pass
+
+
+def locate_empty_rows():
+    pass
