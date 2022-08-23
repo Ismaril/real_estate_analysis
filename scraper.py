@@ -4,11 +4,13 @@ import random
 import send_mail
 import numpy as np
 import pandas as pd
+import data_cleaning
 import requests as requests
 import patoolib  # work with zipped files
+
 from selenium import common
-from bs4 import BeautifulSoup
 from selenium import webdriver
+from bs4 import BeautifulSoup
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246",
@@ -70,7 +72,7 @@ def site_map_scraping(driver):
                                          pd.read_xml(f"{DOWNLOADS}/sitemap{i + 1}.xml")])
 
     # save df
-    pd.DataFrame(all_links_dataframe).to_csv("links_to_properties.csv")
+    pd.DataFrame(all_links_dataframe).to_csv("links_to_properties/links_to_properties.csv")
 
 
 def delete_unwanted_sitemap_files():
@@ -87,8 +89,7 @@ def properties_scraping(driver,
                         dataset,
                         batch_size=1000,
                         max_nr_samples=None,
-                        failed_request_limit=20,
-                        testmode=False):
+                        failed_request_limit=20):
     """
 
     :param driver: insert driver that's gonna operate as artificial web-browser
@@ -101,18 +102,24 @@ def properties_scraping(driver,
 
     start_session = time.perf_counter()
     batches = os.listdir("C:/Users/lazni/PycharmProjects/Real_Estate_Analysis/batches")
-
-    if testmode:
-        try:
-            data = pd.read_excel(dataset)
-        except ValueError:
-            data = pd.read_csv(dataset)
+    rescraping = False
 
     # if some data were already downloaded, continue based on last downloaded index.
-    # this means that we gonna filter the dataset which contains links to webpages
-    elif batches:
+    if batches:
         last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
-        data = pd.read_csv(dataset)[last_completed_index + 1:max_nr_samples]
+        data = pd.read_csv(dataset)
+
+        # try to scrape unsuccessfully scraped links again if we scraped the whole dataset already
+        # TODO: try to figure out why some data is not scraped even though it is present in webpage
+        if data.shape[0] == last_completed_index:
+            data_cleaning.concatenate_batches()
+            # Todo: delete all files in batches
+            data_cleaning.prepare_for_rescraping()
+            rescraping = True
+
+        # filter the dataset which contains links to webpages and continue scraping
+        else:
+            data = data[last_completed_index + 1:max_nr_samples]
 
     # scraping starts for the first time, and therefore start from the beginning of the
     #    source dataset which contains links to webpages
@@ -125,7 +132,9 @@ def properties_scraping(driver,
     timed_out_requests_total = 0
 
     # iterate through webpages and scrape
+    # TODO: possibly remove zip data id
     for index_session, (link, id_) in enumerate(zip(data["loc"], data["id"])):
+        start = time.perf_counter()
 
         # break out of loop if x requests are timed out, could be caused by lost internet connection,
         #     site currently unavailable or high ping
@@ -135,12 +144,14 @@ def properties_scraping(driver,
             )
             break
 
-        start = time.perf_counter()
-        index_all_data = data.index[data["id"] == id_].tolist()[0]
+        # index_all_data = data.index[data["id"] == id_].tolist()[0] # todo: might delete this
+        index_all_data = data.index[data["loc"] == link].tolist()[0]
+
+        # get url of a desired website
         try:
-            # get url of a desired website
             driver.get(link)
             driver.delete_all_cookies()
+        # request timed out
         except common.exceptions.TimeoutException:
             print("Request timed out", "!" * 60, sep="\n")
             timed_out_requests += 1
@@ -175,7 +186,7 @@ def properties_scraping(driver,
         link_split = link.split("/")
 
         dict_["Link:"] = link
-        dict_["Id:"] = id_
+        # dict_["Id:"] = id_
         dict_["Nemovitost:"] = link_split[5]
         dict_["Typ:"] = link_split[6]
         location = link_split[7]
@@ -202,25 +213,25 @@ def properties_scraping(driver,
         print(f"Iter curr session {index_session}, "
               f"Iter total: {index_all_data}, "
               f"Iter time: {iteration_time:.2f} sec\n")
-              #f"{link}\n",
-              #end=f"{'-' * 60}\n")
 
-        if not testmode:
-            # save scraped data in batches based on specified batch size
-            if (index_session and index_session % batch_size == 0) or index_session == data.shape[0] - 1:
-                print(f"Saving batch. Completed iterations total: {index_all_data}", end=f"\n{'-' * 60}\n")
-                final_dataframe.to_csv(f"batches/{index_all_data}.csv", encoding="UTF-8")
-                final_dataframe = pd.DataFrame()
+        # saving rescraped data and end feature scraping for good
+        if rescraping and index_session == data.shape[0] - 1:
+            final_dataframe.to_csv(f"batches/rescraped.csv", encoding="UTF-8")
+            break
 
-                end_batch = time.perf_counter()
-                time_batch = end_batch - start_session
-                send_mail.send_email(subject=f"batch: {index_all_data}",
-                                     body=f"Session is running {time_batch:.2f} sec\n"
-                                          f"Average time of all iterations: {np.mean(average_iter_time)} sec\n"
-                                          f"Timed out requests: {timed_out_requests_total}")
+        # save scraped data in batches based on specified batch size
+        elif (index_session and index_session % batch_size == 0) or index_session == data.shape[0] - 1:
+            print(f"Saving batch. Completed iterations total: {index_all_data}", end=f"\n{'-' * 60}\n")
+            final_dataframe.to_csv(f"batches/{index_all_data}.csv", encoding="UTF-8")
+            final_dataframe = pd.DataFrame()
 
-    if testmode:
-        final_dataframe.to_csv(f"batches/test2.csv", encoding="UTF-8")
+            end_batch = time.perf_counter()
+            time_batch = end_batch - start_session
+            send_mail.send_email(
+                subject=f"Completed rows: {index_all_data}",
+                body=f"Session is running {data_cleaning.readable_time(int(time_batch))}\n"
+                     f"Average time of all iterations: {np.mean(average_iter_time):.2f} sec\n"
+                     f"Timed out requests: {timed_out_requests_total}")
 
     # exit the artificial browser
     driver.quit()
@@ -235,5 +246,3 @@ def properties_scraping(driver,
     send_mail.send_email(subject="Scraping completed")
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
-
-#todo: pridat datum a cas vlozeni radku, scrapovat radsi i cenu ze subjectu
