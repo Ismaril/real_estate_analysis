@@ -25,7 +25,7 @@ def chrome_driver(headless=True, driver_address=c.DRIVER_ADDRESS):
     driver = webdriver.Chrome(driver_address, options=options)
 
     # skip the page request after set time to wait
-    driver.set_page_load_timeout(time_to_wait=15)
+    # driver.set_page_load_timeout(time_to_wait=15)
 
     # driver.implicitly_wait(10) #todo: possible fix of not scraped websites?
     return driver
@@ -69,6 +69,11 @@ def site_map_scraping(driver):
     pd.DataFrame(all_links_dataframe).to_csv(c.PROPERTIES_LINKS)
 
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
 def properties_scraping(driver,
                         dataset,
                         batch_size=1000,
@@ -94,20 +99,20 @@ def properties_scraping(driver,
         last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
         data = pd.read_csv(dataset)
 
-        # # try to scrape unsuccessfully scraped links again if we scraped the whole
-        # #     dataset already
-        # # TODO: try to figure out why some data is not scraped even though it is present in webpage
-        # #    first hint is that it happens when there are multiple fast requests om a row
-        # #    (separated like with 0.1/0.2 sec)
-        # if data.shape[0] == last_completed_index:
-        #     data_cleaning.concatenate_batches()
-        #     # Todo: delete all files in batches
-        #     data_cleaning.prepare_for_rescraping()
-        #     rescraping = True
-        #
-        # # filter the dataset which contains links to webpages and continue scraping
-        # else:
-        data = data[last_completed_index + 1:max_nr_samples]
+        # try to scrape unsuccessfully scraped links again if we scraped the whole
+        #     dataset already
+        # TODO: try to figure out why some data is not scraped even though it is present in webpage
+        #    first hint is that it happens when there are multiple fast requests om a row
+        #    (separated like with 0.1/0.2 sec)
+        if data.shape[0] == last_completed_index + 1:
+            # data_cleaning.concatenate_batches()
+            # Todo: delete all files in batches
+            data = data_cleaning.prepare_for_rescraping()
+            rescraping = True
+
+        # filter the dataset which contains links to webpages and continue scraping
+        else:
+            data = data[last_completed_index + 1:max_nr_samples]
 
     # scraping starts for the first time, and therefore start from the beginning of the
     #    source dataset which contains links to webpages
@@ -137,12 +142,21 @@ def properties_scraping(driver,
         # get url of a desired website
         try:
             driver.get(link)
+            WebDriverWait(driver, 6).until(
+                EC.presence_of_element_located((By.XPATH, '//*[@id="page-layout"]/div[2]/div[3]/div[3]/div/div/div/div/div[4]/h1/span/span[1]'))
+            )
             driver.delete_all_cookies()
+
         # request timed out
         except common.exceptions.TimeoutException:
-            print("Request timed out", "!" * 60, sep="\n")
+            print("Request timed out, or webpage does not exist", "!" * 60, sep="\n")
             timed_out_requests += 1
             timed_out_requests_total += 1
+            end = time.perf_counter()
+            iteration_time = end - start
+            print(f"Iter time: {iteration_time:.2f} sec\n")
+            average_iter_time.append(iteration_time)
+            print(link, end=f"\n{'-' * 60}\n")
             continue
 
         timed_out_requests = 0
@@ -206,12 +220,15 @@ def properties_scraping(driver,
         print(f"Iter curr session {index_session}, "
               f"Iter total: {index_all_data}, "
               f"Iter time: {iteration_time:.2f} sec\n"
+              f"Average time of all iterations: {np.mean(average_iter_time):.2f} sec\n"
               f"{new_row.columns}\n"
               f"{link}\n"
-              f"{'-'*60}\n")
+              f"{'-' * 60}\n")
+
+        if index_session % 10 == 0:
+            send_mail.send_email(f"Index: {index_session}, Avg i time {np.mean(average_iter_time):.2f}s")
 
         # saving rescraped data and end feature scraping for good
-        # todo: with or without 1?
         if rescraping and index_session == data.shape[0] - 1:
             final_dataframe.to_csv(f"batches/rescraped.csv", encoding="UTF-8")
             break
@@ -246,3 +263,4 @@ def properties_scraping(driver,
     send_mail.send_email(subject="Scraping completed")
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
+# =KDYŽ(NEBO(Tabulka1[[#Tento řádek];[Sloupec8]]<>"";Tabulka1[[#Tento řádek];[Sloupec15]]<>"");1;0)
