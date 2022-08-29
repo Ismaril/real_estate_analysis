@@ -1,5 +1,6 @@
 import os
 import re
+import numpy as np
 import pandas as pd
 import constants as c
 from collections import Counter
@@ -29,6 +30,7 @@ def clean_raw_data():
     data = data.loc[data[filter_col] == False]
 
     # find the property type and type of sale
+    # todo: this might be possible to refactor
     property_type = []
     type_of_sale = []
     property_id = []
@@ -60,7 +62,8 @@ def clean_raw_data():
                filter_col,
                property_type_col,
                sale_type_col],
-              axis=1, inplace=True)
+              axis=1,
+              inplace=True)
 
     # save cleaned dataset
     data: pd.DataFrame
@@ -69,6 +72,10 @@ def clean_raw_data():
 
 
 def concatenate_batches():
+    """
+    Concatenate all batches that were downloaded during feature
+    scraping into complete dataset
+    """
     result = pd.DataFrame()
     for file in os.listdir("batches"):
         result = pd.concat([result, pd.read_csv(f"batches/{file}")])
@@ -79,24 +86,47 @@ def concatenate_batches():
 
 def clean_feature_data():
     data = pd.read_csv(c.FEATURES)
-    # todo: add more columns
-    data.drop([c.UNNAMED,
-               c.LINK,
-               c.DATETIME_SCRAPED],
-              inplace=True, axis=1)
-
+    # todo: filter foreign towns
     # filter data where both of these are missing
-    # (also should remove duplicates from 'rescraping')
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
     data = data.loc[filter_]
 
-    # rename towns only to single word
+    # drop
+    data.drop_duplicates(subset=[c.LINK], inplace=True)
+    data.drop([c.UNNAMED,
+               c.LINK,
+               c.DATETIME_SCRAPED,
+               "Id:"],  # TODO: delete this column in next scraping
+              inplace=True,
+              axis=1)
+
+    # rename towns to single word
     data[c.LOCATION] = data[c.LOCATION].str.split()
     data[c.LOCATION] = data[c.LOCATION].str[0]
 
-    print(data.head())
-    # todo: delete all data from batches
-    pass
+    # format price columns to floats (from strings)
+    # not possible to apply to all columns at once because pd string function works only on series
+    for column in [c.TOTAL_PRICE, c.ON_SALE, c.FORMER_PRICE]:
+        data[column] = data[column].str.split("Kč")
+        data[column] = data[column].str[0]
+        data[column] = data[column].str.replace(r'\s', '', regex=True)
+        data[column] = data[column].str.replace(r'\D', '', regex=True)
+        data[column] = data[column].astype(float)
+
+    data: pd.DataFrame
+    # new columns
+    data[c.TOTAL_PRICE] = np.where(data[c.TOTAL_PRICE].notna(),  # condition
+                                   data[c.TOTAL_PRICE],  # True
+                                   data[c.ON_SALE])  # False
+    data[c.SALE] = data[c.FORMER_PRICE] - data[c.ON_SALE]
+
+    print(data.dtypes)
+    print(data.shape)
+    data.to_csv(c.FEATURES_CLEANED)
+    # print(data[c.TOTAL_PRICE][:10])
+
+
+clean_feature_data()
 
 
 def readable_time(seconds: int):
@@ -139,3 +169,5 @@ def delete_unwanted_sitemap_files():
     for file in os.listdir(c.DOWNLOADS):
         if file.startswith(c.SITEMAP):
             os.remove(f"{c.DOWNLOADS}/{file}")
+
+# todo: remove duplicates in features
