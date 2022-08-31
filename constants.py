@@ -13,24 +13,45 @@ STRUCTURE = "Stavba:"
 STATE_OF_OBJECT = "Stav objektu:"
 OWNERSHIP = "Vlastnictví:"
 FORMER_PRICE = "Původní cena:"
-BUILD_UP_AREA = "Plocha zastavěná:"
 USABLE_AREA = "Užitná plocha:"
 LAND_AREA = "Plocha pozemku:"
 GARDEN_AREA = "Plocha zahrady:"
+SALE = "Sleva:"
+TOTAL_AREA = "Celková plocha:"
 
-# strings
+# efef
+PROPERTIES = ("byt", "dum", "pozemek")  # source declaration for constant below
+TYPES_FLAT = ("1+kk", "1+1",
+              "2+kk", "2+1",
+              "3+kk", "3+1",
+              "4+kk", "4+1",
+              "5+kk", "5+1",
+              "6-a-vice", "atypicky")
+
+TYPES_HOUSE = ("rodinny", "chata", "chalupa", "vila",
+               "na-klic", "zemedelska-usedlost", "pamatka")
+TYPES_LAND = ("bydleni", "pole", "les", "zahrada", "ostatni-pozemky",
+              "louka", "komercni", "sady-vinice", "rybnik")
+BUILD = ("Cihlová", "Panelová", "Smíšená", "Skeletová",
+         "Montovaná", "Kamenná", "Dřevěná")
+
+# simple strings
 COMMERCIAL = "komercni"
 OTHERS = "ostatni"
 RENT = "pronajem"
 AUCTION = "drazby"
 SITEMAP = "sitemap"
+FLAT = PROPERTIES[0]
+HOUSE = PROPERTIES[1]
+LAND = PROPERTIES[2]
 
 # links to websites (csv)
 PROPERTIES_LINKS = "links_to_properties/links_to_properties.csv"
 PROPERTIES_CLEANED_LINKS = "links_to_properties/links_to_properties_cleaned.csv"
 
-# downloaded features of each property (csv)
+# features of each property (csv)
 FEATURES = "features/features_all.csv"
+FEATURES_CLEANED = "features/features_cleaned.csv"
 
 # user agents
 USER_AGENTS = [
@@ -48,3 +69,61 @@ SITE_MAP = "https://www.sreality.cz/sitemap.xml"
 
 # local directories
 DOWNLOADS = "C:/Users/lazni/Downloads"
+
+# locations
+TOWNS_PRAGUE = ["Praha"]
+TOWNS_TOP_9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc",
+               "Ceske Budejovice", "Hrade Kralove", "Usti nad Labem",
+               "Pardubice"]
+TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP_9
+NOT_VALID_TOWNS = ["Adeje", "Agia", "Agros", "Aguilas", "Aheloy", "Al", "Alanya",
+                   "Algarrobo", "Algorfa", "Alicante", "Altea", "Aluthgama",
+                   "Amarilla", "Anglerweg", "Annaberg", "Antalya", "Apartamentos",
+                   "Aptera", "Arzl", "Aspe", "Avenida", "Avenue", "Avinguda",
+                   "Avola", "Avtobus", "Ayia", "Baan", "Bad", "Badesi", "Balcik",
+                   "Bar", "Barcelona", "Barriada", "Bayerisch", "Bdeneves",
+                   "Becici", "Benagalbon", "Benahavis", "Benalauria", "Benalmadena",
+                   "Benatky", "Benidorm", "Benijofar", "Benissa", "Bibinje", "Biograd",
+                   "Bologna", "Bosana", "Brac", "Bratislava", "Brodarica", "Bus",
+                   "Burgas", "Byala", "Cabo", "Cabopino", "Cagliari", "Calahonda",
+                   "Calasetta", "Calasparra", "Callao", "Calle", "Camping", "Campobello",
+                   "Cancun", "Cannigione", "Carevo", "Carrer", "Cartagena", "Cartama",
+                   "Casares", "Cemagi", "Cesarica", "Ciovo", "Ciudad", "Costa",
+                   "Country", "Crikvenica", "Cuevas", "Cuneo", "Czech", "Daskabat",
+                   "Davos", "Daya", "Dehesa", "Desenzano", "Detroit", "Dolores",
+                   "Dorfstra", "Drac", "Drapanos", "Duba", "Dubaj", "Dubrovnik",
+                   "Duga", "El", "Elenite", "Eraclea", "Eracleamare", "Ericeira",
+                   "Erpuzice", "Estepona", "Evan", "Famagusta", "Fasnia", "Fazana",
+                   "Fieberbrunn", "Figueres", "Finestrat", "Five", "Formentera",
+                   "Fraga", "Fuengirola", "Fugen", "Fulnek", "Gargellen",
+                   "Geyersberg", "Golem", "Golf", "Gorica", "Goritsa",
+                   "Gornji", "Gosau", "Gracani", "Grafenwiesen", "Gralska",
+                   "Granadilla", "Grebastica", "Greslove", "Grobming", "Gruna",
+                   "Gruzie", "Grygov", "Guardamar", "Habaraduwa", "Haidmuhle",
+                   "Hinterstoder", "Hollersbach", "Hospental", "Hurghada", "Chalkidiki",
+                   "Ibiza", "Ishem", "Jacarilla", "Jalan", "Jalubi", "Jonske", "Kableshkovo",
+                   "Kali", "Kambia", "Kassandreia", "Kastela", "Kastellani", "Katschberg",
+                   "Kavaja", "Kavarna", "Kokkino", "Korfu", "Kosharitsa", "Krk", "L", "La",
+                   "Las", "Laz", "Lite", "Liznjan", "Lkan", "Lnare", "Lozenets", "Luxurious",
+                   "Madrigal", "Mahmutlar", "Makarska", "Malaga", "Male", "Mandre", "Manilva",
+                   "Mar", "Marathokefala", "Marbella", "Mattinata", "Miami", "Montesilvano",
+                   "Moos", "Moraira", "Murciana", "Murter", "nan", "Nassfeld", "Neo",
+                   "Nesebar", "Noruega", "Novalja", "Novelda", "Novi", "Novigrad", "Oberndorf",
+                   "Omis", "Ondara", "Opatija", "Orihuela", "Oscadnica", "Pafos", "Pag", "Pagi",
+                   "Pachino", "Pakostane", "Pangandaran", "Parque", "Pattaya", "Penthous", "Penthouse",
+                   "Podgora", "Polen", "Polop", "Pomorie", "Portugalsko", "Posedarje", "Posna",
+                   "Povljana", "Primorsko", "Primosten", "Privlaka", "Puerto", "Pula", "Pulpi",
+                   "Punat", "Qerret", "Rab", "Ravda", "Razlog", "Rennweg", "Rentalsbcn", "Roatan",
+                   "Rogachevo", "Rogoznica", "Rrashbull", "Safa", "Safaga", "Sahl", "San",
+                   "Sandland", "Sankt", "Saranda", "Sassofortino", "Savudrija", "Scalea",
+                   "Shengjin", "Schladming", "Schrattenberg", "Sidari", "Simuni", "Sira",
+                   "Sirmione", "Sisan", "Sistiana", "Siviri", "Skil", "Slough", "Sofie",
+                   "Sofitel", "Soma", "Sommatino", "Son", "Souvenirs", "Sozopol", "Spanelsko",
+                   "Spiegelau", "Split", "Splitska", "Srbsko", "Srima", "St", "Starigrad",
+                   "Sucuraj", "Sumartin", "Supetar", "Syvota", "Tabanan", "Talin", "Tankovo",
+                   "Tauplitz", "The", "Torre", "Torremolinos", "Torrevieja", "Torrox",
+                   "Tossa", "Treffen", "Trezzo", "Tribunj", "Trikomo", "Trogir", "Tulum",
+                   "Turanj", "Turcianske", "Ugljan", "Ulcinj", "Umag", "Urbanizacion",
+                   "Valencie", "Vera", "Via", "Villa", "Villajoyosa", "Villamartin", "Villaricos",
+                   "Vinjerac", "Vinkuran", "Vir", "Waldschmidtstra", "Xabia", "Zahreb", "Zakynthos",
+                   "Zell", ]
