@@ -86,12 +86,13 @@ def concatenate_batches():
 
 def clean_feature_data():
     data = pd.read_csv(c.FEATURES)
-    # todo: filter foreign towns
-    # filter data where both of these are missing
+    data: pd.DataFrame
+
+    # filter data where total price or sale price are missing
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
     data = data.loc[filter_]
 
-    # drop
+    # drop first unwanted stuff
     data.drop_duplicates(subset=[c.LINK], inplace=True)
     data.drop([c.UNNAMED,
                c.LINK,
@@ -99,10 +100,32 @@ def clean_feature_data():
                "Id:"],  # TODO: delete this column in next scraping
               inplace=True,
               axis=1)
+    for column in [c.LAND_AREA, c.USABLE_AREA, c.GARDEN_AREA]:
+        data = data.loc[data[column] != 1.0]
 
-    # rename towns to single word
+    # drop empty cells in usable area in flats & houses
+    filter_ = (data[c.PROPERTY].isin([c.FLAT, c.HOUSE])) \
+              & (pd.isna(data[c.USABLE_AREA]))
+    data = data.loc[~filter_]
+
+    # drop empty cells in usable area in lands
+    filter_ = (data[c.PROPERTY] == c.LAND) \
+              & (pd.isna(data[c.LAND_AREA]))
+    data = data.loc[~filter_]
+
+    # todo: this I should update based on scraping of different source of cities
+    # rename towns to single word, filter towns
     data[c.LOCATION] = data[c.LOCATION].str.split()
     data[c.LOCATION] = data[c.LOCATION].str[0]
+    data[c.LOCATION] = data[c.LOCATION].astype(str)
+
+    filter_ = data[c.LOCATION].apply(lambda x: True if x.isalpha() else False)
+    data = data.loc[filter_]
+
+    filter_ = data[c.LOCATION].notna() \
+              & data[c.LOCATION].apply(lambda x: True if x != "nan" else False) \
+              & ~data[c.LOCATION].isin(c.NOT_VALID_TOWNS)
+    data = data.loc[filter_]
 
     # format price columns to floats (from strings)
     # not possible to apply to all columns at once because pd string function works only on series
@@ -113,20 +136,26 @@ def clean_feature_data():
         data[column] = data[column].str.replace(r'\D', '', regex=True)
         data[column] = data[column].astype(float)
 
-    data: pd.DataFrame
-    # new columns
+    # put together total prices and prices after sale
     data[c.TOTAL_PRICE] = np.where(data[c.TOTAL_PRICE].notna(),  # condition
                                    data[c.TOTAL_PRICE],  # True
                                    data[c.ON_SALE])  # False
     data[c.SALE] = data[c.FORMER_PRICE] - data[c.ON_SALE]
 
-    print(data.dtypes)
-    print(data.shape)
+    # create new column where is summed all usable area
+    data[c.TOTAL_AREA] = np.where(data[c.PROPERTY].isin([c.HOUSE, c.LAND]),
+                                  data[c.USABLE_AREA] + data[c.GARDEN_AREA],
+                                  data[c.USABLE_AREA])
+
+    print(data.info())
     data.to_csv(c.FEATURES_CLEANED)
-    # print(data[c.TOTAL_PRICE][:10])
 
 
 clean_feature_data()
+
+
+def aggregate_feature_data():
+    pass
 
 
 def readable_time(seconds: int):
@@ -169,5 +198,3 @@ def delete_unwanted_sitemap_files():
     for file in os.listdir(c.DOWNLOADS):
         if file.startswith(c.SITEMAP):
             os.remove(f"{c.DOWNLOADS}/{file}")
-
-# todo: remove duplicates in features
