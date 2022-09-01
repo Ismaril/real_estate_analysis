@@ -18,20 +18,22 @@ LAND_AREA = "Plocha pozemku:"
 GARDEN_AREA = "Plocha zahrady:"
 SALE = "Sleva:"
 TOTAL_AREA = "Celková plocha:"
+PRICE_M2 = "Cena metr2"
+PERIOD = "Měsíc"
 
 # efef
 PROPERTIES = ("byt", "dum", "pozemek")  # source declaration for constant below
-TYPES_FLAT = ("1+kk", "1+1",
+TYPES_FLAT = ["1+kk", "1+1",
               "2+kk", "2+1",
               "3+kk", "3+1",
               "4+kk", "4+1",
               "5+kk", "5+1",
-              "6-a-vice", "atypicky")
+              "6-a-vice", "atypicky"]
 
-TYPES_HOUSE = ("rodinny", "chata", "chalupa", "vila",
-               "na-klic", "zemedelska-usedlost", "pamatka")
-TYPES_LAND = ("bydleni", "pole", "les", "zahrada", "ostatni-pozemky",
-              "louka", "komercni", "sady-vinice", "rybnik")
+TYPES_HOUSE = ["rodinny", "chata", "chalupa", "vila",
+               "na-klic", "zemedelska-usedlost", "pamatka"]
+TYPES_LAND = ["bydleni", "pole", "les", "zahrada", "ostatni-pozemky",
+              "louka", "komercni", "sady-vinice", "rybnik"]
 BUILD = ("Cihlová", "Panelová", "Smíšená", "Skeletová",
          "Montovaná", "Kamenná", "Dřevěná")
 
