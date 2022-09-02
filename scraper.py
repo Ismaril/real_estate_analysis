@@ -8,9 +8,13 @@ import data_cleaning
 import requests as requests
 import patoolib  # work with zipped files
 import constants as c
+
 from selenium import common
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def chrome_driver(headless=True, driver_address=c.DRIVER_ADDRESS):
@@ -24,10 +28,11 @@ def chrome_driver(headless=True, driver_address=c.DRIVER_ADDRESS):
     #   cannot be scraped with python requests. Lots of info would miss otherwise.
     driver = webdriver.Chrome(driver_address, options=options)
 
+    # todo: might be possible to delete this
     # skip the page request after set time to wait
     # driver.set_page_load_timeout(time_to_wait=15)
+    # driver.implicitly_wait(10)
 
-    # driver.implicitly_wait(10) #todo: possible fix of not scraped websites?
     return driver
 
 
@@ -39,8 +44,7 @@ def site_map_scraping(driver):
     into complete dataset. This function basically gets the whole sitemap.
     """
     xml_docs = pd.read_xml(
-        requests.get(c.SITE_MAP,
-                     headers={"User-Agent": random.choice(c.USER_AGENTS)}).text
+        requests.get(c.SITE_MAP, headers={"User-Agent": random.choice(c.USER_AGENTS)}).text
     )[c.LINK]
 
     for url in xml_docs:
@@ -69,22 +73,16 @@ def site_map_scraping(driver):
     pd.DataFrame(all_links_dataframe).to_csv(c.PROPERTIES_LINKS)
 
 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-
-def properties_scraping(driver,
-                        dataset,
-                        batch_size=1000,
-                        max_nr_samples=None,
-                        failed_request_limit=20):
+def features_scraping(driver,
+                      dataset,
+                      batch_size=1000,
+                      max_nr_samples=None,
+                      failed_request_limit=20):
     """
 
     :param driver: insert driver that's gonna operate as artificial web-browser
     :param dataset: dataset that contains links to websites
-    :param batch_size: (number of rows) downloaded data will be saved in
-        batches in case of lost connection
+    :param batch_size: (number of rows) downloaded data will be saved in batches in case of lost connection
     :param max_nr_samples: set upper index as a filter of the dataset
     :param failed_request_limit: number of failed requests in a row to break the loop
     :return: *.csv
@@ -99,14 +97,11 @@ def properties_scraping(driver,
         last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
         data = pd.read_csv(dataset)
 
+        # TODO: might be possible to delete this block ('if' only)
         # try to scrape unsuccessfully scraped links again if we scraped the whole
         #     dataset already
-        # TODO: try to figure out why some data is not scraped even though it is present in webpage
-        #    first hint is that it happens when there are multiple fast requests om a row
-        #    (separated like with 0.1/0.2 sec)
         if data.shape[0] == last_completed_index + 1:
             # data_cleaning.concatenate_batches()
-            # Todo: delete all files in batches
             data = data_cleaning.prepare_for_rescraping()
             rescraping = True
 
@@ -128,8 +123,8 @@ def properties_scraping(driver,
     for index_session, link in enumerate(data[c.LINK]):
         start = time.perf_counter()
 
-        # break out of loop if x requests are timed out, could be caused by lost
-        #     internet connection, site currently unavailable or high ping
+        # break out of loop if x requests are timed out, possibly by lost
+        #     internet connection, site unavailable or high ping etc...
         if timed_out_requests == failed_request_limit:
             send_mail.send_email(
                 subject=f"Scrapping stopped due to {failed_request_limit}"
@@ -142,8 +137,11 @@ def properties_scraping(driver,
         # get url of a desired website
         try:
             driver.get(link)
+            # todo: check how it behaves in next scraping. This function helped a ton
+            #   because formerly some pages did not load fully and therefore its content could not be scraped
             WebDriverWait(driver, 6).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="page-layout"]/div[2]/div[3]/div[3]/div/div/div/div/div[4]/h1/span/span[1]'))
+                EC.presence_of_element_located((By.XPATH,
+                                                '//*[@id="page-layout"]/div[2]/div[3]/div[3]/div/div/div/div/div[4]/h1/span/span[1]'))
             )
             driver.delete_all_cookies()
 
@@ -200,7 +198,6 @@ def properties_scraping(driver,
                          c.OWNERSHIP,
                          c.ON_SALE,
                          c.FORMER_PRICE,
-                         c.BUILD_UP_AREA,
                          c.USABLE_AREA,
                          c.LAND_AREA,
                          c.GARDEN_AREA]
@@ -225,8 +222,9 @@ def properties_scraping(driver,
               f"{link}\n"
               f"{'-' * 60}\n")
 
-        if index_session % 10 == 0:
-            send_mail.send_email(f"Index: {index_session}, Avg i time {np.mean(average_iter_time):.2f}s")
+        if index_session % 1000 == 0:
+            send_mail.send_email(f"Index: {index_session},"
+                                 f"Avg i time {np.mean(average_iter_time):.2f}s")
 
         # saving rescraped data and end feature scraping for good
         if rescraping and index_session == data.shape[0] - 1:
@@ -264,3 +262,5 @@ def properties_scraping(driver,
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
 # =KDYŽ(NEBO(Tabulka1[[#Tento řádek];[Sloupec8]]<>"";Tabulka1[[#Tento řádek];[Sloupec15]]<>"");1;0)
+
+# todo: scrapovat taky stat aby se dala filtrovat zeme
