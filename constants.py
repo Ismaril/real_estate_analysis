@@ -21,8 +21,9 @@ TOTAL_AREA = "Celková plocha:"
 PRICE_M2 = "Cena metr2"
 PERIOD = "Měsíc"
 
-# efef
-PROPERTIES = ("byt", "dum", "pozemek")  # source declaration for constant below
+# specifications
+PROPERTIES = ("byt", "dum", "pozemek")  # source declaration for constant below (watch index position)
+
 TYPES_FLAT = ["1+kk", "1+1",
               "2+kk", "2+1",
               "3+kk", "3+1",
@@ -30,12 +31,21 @@ TYPES_FLAT = ["1+kk", "1+1",
               "5+kk", "5+1",
               "6-a-vice", "atypicky"]
 
-TYPES_HOUSE = ["rodinny", "chata", "chalupa", "vila",
-               "na-klic", "zemedelska-usedlost", "pamatka"]
-TYPES_LAND = ["bydleni", "pole", "les", "zahrada", "ostatni-pozemky",
-              "louka", "komercni", "sady-vinice", "rybnik"]
-BUILD = ("Cihlová", "Panelová", "Smíšená", "Skeletová",
-         "Montovaná", "Kamenná", "Dřevěná")
+TYPES_HOUSE = ["rodinny", "chata",
+               "chalupa", "vila",
+               "na-klic", "zemedelska-usedlost",
+               "pamatka"]
+
+TYPES_LAND = ["bydleni", "pole",
+              "les", "zahrada",
+              "ostatni-pozemky", "louka",
+              "komercni", "sady-vinice",
+              "rybnik"]
+
+BUILD = ("Cihlová", "Panelová",
+         "Smíšená", "Skeletová",
+         "Montovaná", "Kamenná",
+         "Dřevěná")
 
 # simple strings
 COMMERCIAL = "komercni"
@@ -43,6 +53,10 @@ OTHERS = "ostatni"
 RENT = "pronajem"
 AUCTION = "drazby"
 SITEMAP = "sitemap"
+SHORT_PRAGUE = "Pra"
+SHORT_TOP9 = "T_9"
+SHORT_REST = "Oth"
+
 FLAT = PROPERTIES[0]
 HOUSE = PROPERTIES[1]
 LAND = PROPERTIES[2]
@@ -74,10 +88,12 @@ DOWNLOADS = "C:/Users/lazni/Downloads"
 
 # locations
 TOWNS_PRAGUE = ["Praha"]
-TOWNS_TOP_9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc",
+TOWNS_TOP9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc",
                "Ceske Budejovice", "Hrade Kralove", "Usti nad Labem",
                "Pardubice"]
-TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP_9
+TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP9
+TOWNS_REST_TITLE = "Zbytek ČR"
+
 NOT_VALID_TOWNS = ["Adeje", "Agia", "Agros", "Aguilas", "Aheloy", "Al", "Alanya",
                    "Algarrobo", "Algorfa", "Alicante", "Altea", "Aluthgama",
                    "Amarilla", "Anglerweg", "Annaberg", "Antalya", "Apartamentos",
