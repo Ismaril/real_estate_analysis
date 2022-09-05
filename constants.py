@@ -22,8 +22,8 @@ PRICE_M2 = "Cena metr2"
 PERIOD = "Měsíc"
 
 # specifications
-PROPERTIES = ("byt", "dum", "pozemek")  # source declaration for constant below (watch index position)
-
+# source declaration for constant below (watch index position here)
+TYPES_PROPERTIES = ("byt", "dum", "pozemek")
 TYPES_FLAT = ["1+kk", "1+1",
               "2+kk", "2+1",
               "3+kk", "3+1",
@@ -31,21 +31,14 @@ TYPES_FLAT = ["1+kk", "1+1",
               "5+kk", "5+1",
               "6-a-vice", "atypicky"]
 
-TYPES_HOUSE = ["rodinny", "chata",
-               "chalupa", "vila",
-               "na-klic", "zemedelska-usedlost",
-               "pamatka"]
+TYPES_HOUSE = ["rodinny", "chata", "chalupa", "vila",
+               "na-klic", "zemedelska-usedlost", "pamatka"]
 
-TYPES_LAND = ["bydleni", "pole",
-              "les", "zahrada",
-              "ostatni-pozemky", "louka",
-              "komercni", "sady-vinice",
-              "rybnik"]
+TYPES_LAND = ["bydleni", "pole", "les", "zahrada", "ostatni-pozemky",
+              "louka", "komercni", "sady-vinice", "rybnik"]
 
-BUILD = ("Cihlová", "Panelová",
-         "Smíšená", "Skeletová",
-         "Montovaná", "Kamenná",
-         "Dřevěná")
+BUILD = ("Cihlová", "Panelová", "Smíšená", "Skeletová",
+         "Montovaná", "Kamenná", "Dřevěná")
 
 # simple strings
 COMMERCIAL = "komercni"
@@ -56,18 +49,22 @@ SITEMAP = "sitemap"
 SHORT_PRAGUE = "Pra"
 SHORT_TOP9 = "T_9"
 SHORT_REST = "Oth"
+TOWNS_REST_TITLE = "Zbytek ČR"
+FLAT = TYPES_PROPERTIES[0]
+HOUSE = TYPES_PROPERTIES[1]
+LAND = TYPES_PROPERTIES[2]
 
-FLAT = PROPERTIES[0]
-HOUSE = PROPERTIES[1]
-LAND = PROPERTIES[2]
+# directories
+BATCHES = "batches"
+ARCHIVE = "archive"
+DOWNLOADS = "C:/Users/lazni/Downloads"
 
-# links to websites (csv)
-PROPERTIES_LINKS = "links_to_properties/links_to_properties.csv"
-PROPERTIES_CLEANED_LINKS = "links_to_properties/links_to_properties_cleaned.csv"
-
-# features of each property (csv)
+# csv datasets
+PROPERTIES = "links_to_properties/links_to_properties.csv"
+PROPERTIES_CLEANED = "links_to_properties/links_to_properties_cleaned.csv"
 FEATURES = "features/features_all.csv"
 FEATURES_CLEANED = "features/features_cleaned.csv"
+RESULTS = "result/prices_all_months.csv"
 
 # user agents
 USER_AGENTS = [
@@ -83,17 +80,11 @@ DRIVER_ADDRESS = "chrome_driver/chromedriver.exe"
 # sitemap (xml)
 SITE_MAP = "https://www.sreality.cz/sitemap.xml"
 
-# local directories
-DOWNLOADS = "C:/Users/lazni/Downloads"
-
 # locations
 TOWNS_PRAGUE = ["Praha"]
-TOWNS_TOP9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc",
-               "Ceske Budejovice", "Hrade Kralove", "Usti nad Labem",
-               "Pardubice"]
+TOWNS_TOP9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc", "Ceske Budejovice",
+              "Hrade Kralove", "Usti nad Labem", "Pardubice"]
 TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP9
-TOWNS_REST_TITLE = "Zbytek ČR"
-
 NOT_VALID_TOWNS = ["Adeje", "Agia", "Agros", "Aguilas", "Aheloy", "Al", "Alanya",
                    "Algarrobo", "Algorfa", "Alicante", "Altea", "Aluthgama",
                    "Amarilla", "Anglerweg", "Annaberg", "Antalya", "Apartamentos",
