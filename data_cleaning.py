@@ -4,22 +4,22 @@ import datetime
 import numpy as np
 import pandas as pd
 import constants as c
-from collections import Counter
 
 
 def clean_raw_data():
     """
     Filter all links to websites that are not relevant for us
 
-    :returns: *.csv
+    :returns: None
     """
-    data = pd.read_csv(c.PROPERTIES_LINKS)
+    data = pd.read_csv(c.PROPERTIES)
     data.dropna(inplace=True)
     data.rename(columns={c.LOC: c.LINK}, inplace=True)
 
     # locate links to properties, break out once the pattern of links changes
-    #    (properties on the site map are then followed by some not relevant pages)
-    for i, link in enumerate(data[c.LINK][:-1]):
+    #    (properties on the site map start from the beginning and are then
+    #     followed by some not relevant pages)
+    for i, link in enumerate(data[c.LINK]):
         try:
             match = re.search("/.\d+", link)
             match.group()
@@ -28,65 +28,50 @@ def clean_raw_data():
             break
 
     # filter out duplicate webpages, site map has the same web pages
-    #     2x - CZ and EN language
-    filter_duplicate_links = [False, True] * (len(data[c.LINK]) // 2)
+    #     2x - CZ and EN language. This means filter every other row
     filter_col = "filter"
-    data[filter_col] = filter_duplicate_links
+    data[filter_col] = [False, True] * (len(data[c.LINK]) // 2)
     data = data.loc[data[filter_col] == False]
 
-    # find the property type and type of sale
-    # todo: this might be possible to refactor
-    property_type = []
-    type_of_sale = []
-    property_id = []
-    for link in data[c.LINK]:
-        split = link.split("/")
-        property_type.append(split[5])
-        type_of_sale.append(split[4])
-        property_id.append(split[-1])
+    # filter out links so that we have only private properties and only for sale
+    property_type = "Property type:"
+    sale_type = "Type of sale:"
+    link_split = "link_split"
+    data[link_split] = data[c.LINK].str.split("/")
+    data[property_type] = data[link_split].str[5]
+    data[sale_type] = data[link_split].str[4]
 
-    # get some feeling of property type statistics
-    property_type_stats = Counter(property_type)
-    print("Summary of property types: ",
-          property_type_stats.most_common())
-
-    # filter out next unwanted stuff
-    property_type_col = "Property type:"
-    sale_type_col = "Type of sale:"
-    data[property_type_col] = property_type
-    data[sale_type_col] = type_of_sale
-
-    filter_ = (data[property_type_col] != c.COMMERCIAL) & \
-              (data[property_type_col] != c.OTHERS) & \
-              (data[sale_type_col] != c.RENT) & \
-              (data[sale_type_col] != c.AUCTION)
+    filter_ = (data[property_type] != c.COMMERCIAL) & \
+              (data[property_type] != c.OTHERS) & \
+              (data[sale_type] != c.RENT) & \
+              (data[sale_type] != c.AUCTION)
     data = data.loc[filter_]
 
-    data.drop([c.UNNAMED,
-               c.LASTMOD,
+    data.drop([c.LASTMOD,
+               link_split,
                filter_col,
-               property_type_col,
-               sale_type_col],
+               property_type,
+               sale_type],
               axis=1,
               inplace=True)
 
     # save cleaned dataset
-    data: pd.DataFrame
-    data.to_csv(c.PROPERTIES_CLEANED_LINKS)
+    data.to_csv(c.PROPERTIES_CLEANED, index=False)
+
     print(data)
 
 
 def concatenate_batches():
     """
     Concatenate all batches that were downloaded during feature
-    scraping into complete dataset
+    scraping, into complete dataset
 
-    :returns: *.csv
+    :returns: None
     """
     result = pd.DataFrame()
-    for file in os.listdir("batches"):
-        result = pd.concat([result, pd.read_csv(f"batches/{file}")])
-    result.drop([c.UNNAMED], inplace=True, axis=1)
+    for file in os.listdir(c.BATCHES):
+        result = pd.concat([result, pd.read_csv(f"{c.BATCHES}/{file}")])
+    result.drop([c.UNNAMED], inplace=True, axis=1)  # todo: might delete?
     result.to_csv(c.FEATURES)
     print("Batches concatenated")
 
@@ -96,10 +81,9 @@ def clean_feature_data():
     Clean and manipulate downloaded raw features into the state that can be
     aggregated later
 
-    :returns: *.csv
+    :returns: None
     """
     data = pd.read_csv(c.FEATURES)
-    data_flat: pd.DataFrame
 
     # filter data where total price or sale price are missing
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
@@ -107,11 +91,9 @@ def clean_feature_data():
 
     # drop first unwanted stuff
     data.drop_duplicates(subset=[c.LINK], inplace=True)
-    data.drop([c.UNNAMED,
+    data.drop([c.UNNAMED,  # todo: check this
                c.LINK,
-               c.DATETIME_SCRAPED,
-               "Plocha zastavěná:",  # TODO: delete this column in next scraping
-               "Id:"],  # TODO: delete this column in next scraping
+               c.DATETIME_SCRAPED], #todo: also might delete?
               inplace=True,
               axis=1)
     for column in [c.LAND_AREA, c.USABLE_AREA, c.GARDEN_AREA]:
@@ -142,7 +124,8 @@ def clean_feature_data():
     data = data.loc[filter_]
 
     # format price columns to floats (from strings)
-    # not possible to apply to all columns at once because pd string function works only on series
+    # not possible to apply to all columns at once because pd string
+    #   function works only on series
     for column in [c.TOTAL_PRICE, c.ON_SALE, c.FORMER_PRICE]:
         data[column] = data[column].str.split("Kč")
         data[column] = data[column].str[0]
@@ -156,11 +139,10 @@ def clean_feature_data():
                                    data[c.ON_SALE])  # False
     data[c.SALE] = data[c.FORMER_PRICE] - data[c.ON_SALE]
 
-    # create a new column where is summed all usable area
-    data.loc[(data[c.PROPERTY] == c.FLAT)
-             & data[c.GARDEN_AREA].isna(), c.TOTAL_AREA] = data[c.USABLE_AREA]
-    data.loc[(data[c.PROPERTY] == c.FLAT)
-             & data[c.GARDEN_AREA].notna(), c.TOTAL_AREA] = data[c.USABLE_AREA] + data[c.GARDEN_AREA]
+    # create a new column where is summed complete usable area
+    # [condition, name of new column] = column
+    data.loc[(data[c.PROPERTY] == c.FLAT) & data[c.GARDEN_AREA].isna(), c.TOTAL_AREA] = data[c.USABLE_AREA]
+    data.loc[(data[c.PROPERTY] == c.FLAT) & data[c.GARDEN_AREA].notna(), c.TOTAL_AREA] = data[c.USABLE_AREA] + data[c.GARDEN_AREA]
     data.loc[(data[c.PROPERTY] == c.HOUSE), c.TOTAL_AREA] = data[c.USABLE_AREA] + data[c.LAND_AREA]
     data.loc[(data[c.PROPERTY] == c.LAND), c.TOTAL_AREA] = data[c.LAND_AREA]
 
@@ -171,14 +153,12 @@ def clean_feature_data():
     data.to_csv(c.FEATURES_CLEANED)
 
 
-# clean_feature_data()
-
-
 def aggregate_feature_data():
     """
-    Aggregate feature data into the state that can be used for plotting
+    Aggregate feature data into the state that can be used
+    for plotting
 
-    :returns: *.csv
+    :returns: None
     """
     data = pd.read_csv(c.FEATURES_CLEANED)
     new_data = pd.DataFrame()
@@ -189,29 +169,34 @@ def aggregate_feature_data():
     for i in range(3):
         for type_ in c.TYPES_FLAT + c.TYPES_HOUSE + c.TYPES_LAND:
             if not i:
-                filter_ = (data[c.LOCATION] == c.TOWNS_PRAGUE[0]) & (data[c.TYPE] == type_)
+                filter_ = (data[c.LOCATION] == c.TOWNS_PRAGUE[0])\
+                          & (data[c.TYPE] == type_)
             elif i == 1:
-                filter_ = data[c.LOCATION].isin(c.TOWNS_TOP_9) & (data[c.TYPE] == type_)
+                filter_ = data[c.LOCATION].isin(c.TOWNS_TOP9)\
+                          & (data[c.TYPE] == type_)
             else:
-                filter_ = ~data[c.LOCATION].isin(c.TOWNS_PRAGUE + c.TOWNS_TOP_9) & (data[c.TYPE] == type_)
+                filter_ = ~data[c.LOCATION].isin(c.TOWNS_PRAGUE + c.TOWNS_TOP9)\
+                          & (data[c.TYPE] == type_)
 
             data_filtered = data.loc[filter_]
+
+            # compute median of a given type of properties in a given area
             price = data_filtered[c.PRICE_M2].median()
 
             if not i:
-                new_data[f"{c.TOWNS_PRAGUE[0][:3]} {type_}"] = [price]
+                new_data[f"{c.SHORT_PRAGUE} {type_}"] = [price]
             elif i == 1:
-                new_data[f"T_9 {type_}"] = [price]
+                new_data[f"{c.SHORT_TOP9} {type_}"] = [price]
             else:
-                new_data[f"Oth {type_}"] = [price]
+                new_data[f"{c.SHORT_REST} {type_}"] = [price]
     new_data[c.PERIOD] = [datetime.date.today()]
 
     try:
-        prices_all_months = pd.read_csv("result/prices_all_months.csv")
+        prices_all_months = pd.read_csv(c.RESULTS)
         prices_all_months = pd.concat([prices_all_months, new_data])
-        prices_all_months.to_csv("result/prices_all_months.csv", index=False)
+        prices_all_months.to_csv(c.RESULTS, index=False)
     except pd.errors.EmptyDataError:
-        new_data.to_csv("result/prices_all_months.csv", index=False)
+        new_data.to_csv(c.RESULTS, index=False)
 
 
 def readable_time(seconds: int) -> str:
@@ -238,17 +223,38 @@ def readable_time(seconds: int) -> str:
     return result
 
 
+# todo: possible do delete in next scraping?
 def prepare_for_rescraping():
-    # todo: possible do delete in next scraping?
     data = pd.read_csv(c.FEATURES)
     filter_ = (pd.isna(data[c.TOTAL_PRICE])) & (pd.isna(data[c.ON_SALE]))
     data = data.loc[filter_][c.LINK]
     data.to_csv("links_to_properties/links_to_properties_unsuccessful.csv")
-    return pd.read_csv("links_to_properties/links_to_properties_unsuccessful.csv")
+    return pd.read_csv("archive/links_to_properties_unsuccessful.csv")
+
+
+def archive_datasets():
+    """
+    Rename feature dataset and move it into new location - archive it.
+
+    :return: None
+    """
+    file_number = len(os.listdir(c.ARCHIVE))
+
+    # renames and also moves the file to new location
+    os.rename(c.FEATURES, f"{c.ARCHIVE}/{file_number}.csv")
 
 
 def delete_all_batches():
-    pass
+    """
+    Delete all files that were formerly downloaded as
+    batches of features from the next
+
+    :return: None
+    """
+    for file in os.listdir(c.BATCHES):
+        os.remove(f"{c.BATCHES}/{file}")
+
+    os.remove(c.FEATURES_CLEANED)
 
 
 def delete_unwanted_sitemap_files():
