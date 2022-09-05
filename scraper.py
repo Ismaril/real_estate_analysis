@@ -5,20 +5,21 @@ import send_mail
 import numpy as np
 import pandas as pd
 import data_cleaning
+import constants as c
 import requests as requests
 import patoolib  # work with zipped files
-import constants as c
 
 from selenium import common
-from selenium import webdriver
 from bs4 import BeautifulSoup
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def chrome_driver(headless=True, driver_address=c.DRIVER_ADDRESS):
-    # with this option set to True desktop chrome application will not pop up
+def chrome_driver(headless=True,
+                  driver_address=c.DRIVER_ADDRESS):
+    # with the option headless set to True, desktop chrome application will not pop up
     options = webdriver.ChromeOptions()
     options.headless = headless
     options.add_argument(f'user-agent={random.choice(c.USER_AGENTS)}')  # set user agent
@@ -38,14 +39,16 @@ def chrome_driver(headless=True, driver_address=c.DRIVER_ADDRESS):
 
 def site_map_scraping(driver):
     """
-    :param driver: insert driver that's gonna operate as artificial web-browser
-
     Scrape xml files that contain links to all web pages. Extract all links and put them
-    into complete dataset. This function basically gets the whole sitemap.
+    into one dataset. This function basically gets the whole sitemap.
+
+    :param driver: insert driver that's gonna operate as artificial web-browser
     """
+
+    # read directly from website
     xml_docs = pd.read_xml(
         requests.get(c.SITE_MAP, headers={"User-Agent": random.choice(c.USER_AGENTS)}).text
-    )[c.LINK]
+    )[c.LOC]
 
     for url in xml_docs:
         # get url of a xml containing links to websites of all given properties,
@@ -63,39 +66,39 @@ def site_map_scraping(driver):
         patoolib.extract_archive(f"{c.DOWNLOADS}/{c.SITEMAP}{i + 1}.xml.gz",
                                  outdir=c.DOWNLOADS)
 
-        # read files that contain links to properties and put them all in a huge dataset
+        # read files that contain links to properties and put them all in one dataset
         all_links_dataframe = pd.concat(
             [all_links_dataframe,
              pd.read_xml(f"{c.DOWNLOADS}/{c.SITEMAP}{i + 1}.xml")]
         )
 
     # save df
-    pd.DataFrame(all_links_dataframe).to_csv(c.PROPERTIES_LINKS)
+    pd.DataFrame(all_links_dataframe).to_csv(c.PROPERTIES, index=False)
 
 
 def features_scraping(driver,
-                      dataset,
                       batch_size=1000,
                       max_nr_samples=None,
                       failed_request_limit=20):
     """
+    Scrape features of a given property. Once a given number of properties has been scraped, save as a
+    csv batch.
 
     :param driver: insert driver that's gonna operate as artificial web-browser
-    :param dataset: dataset that contains links to websites
     :param batch_size: (number of rows) downloaded data will be saved in batches in case of lost connection
     :param max_nr_samples: set upper index as a filter of the dataset
     :param failed_request_limit: number of failed requests in a row to break the loop
-    :return: *.csv
+    :return: None
     """
 
     start_session = time.perf_counter()
-    batches = os.listdir("batches")
+    batches = os.listdir(c.BATCHES)
     rescraping = False
 
     # if some data were already downloaded, continue based on last downloaded index.
     if batches:
         last_completed_index = int(max(int(item.split(".")[0]) for item in batches))
-        data = pd.read_csv(dataset)
+        data = pd.read_csv(c.PROPERTIES_CLEANED)
 
         # TODO: might be possible to delete this block ('if' only)
         # try to scrape unsuccessfully scraped links again if we scraped the whole
@@ -112,7 +115,7 @@ def features_scraping(driver,
     # scraping starts for the first time, and therefore start from the beginning of the
     #    source dataset which contains links to webpages
     else:
-        data = pd.read_csv(dataset)[:max_nr_samples]
+        data = pd.read_csv(c.PROPERTIES_CLEANED)[:max_nr_samples]
 
     final_dataframe = pd.DataFrame()
     average_iter_time = []
@@ -139,22 +142,22 @@ def features_scraping(driver,
             driver.get(link)
             # todo: check how it behaves in next scraping. This function helped a ton
             #   because formerly some pages did not load fully and therefore its content could not be scraped
-            WebDriverWait(driver, 6).until(
-                EC.presence_of_element_located((By.XPATH,
-                                                '//*[@id="page-layout"]/div[2]/div[3]/div[3]/div/div/div/div/div[4]/h1/span/span[1]'))
-            )
+            x_path = '//*[@id="page-layout"]/div[2]/div[3]/div[3]/div/div/div/div/div[4]/h1/span/span[1]'
+            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, x_path)))
             driver.delete_all_cookies()
 
         # request timed out
         except common.exceptions.TimeoutException:
-            print("Request timed out, or webpage does not exist", "!" * 60, sep="\n")
             timed_out_requests += 1
             timed_out_requests_total += 1
             end = time.perf_counter()
             iteration_time = end - start
-            print(f"Iter time: {iteration_time:.2f} sec\n")
             average_iter_time.append(iteration_time)
-            print(link, end=f"\n{'-' * 60}\n")
+            print("Request timed out, or webpage does not exist", "!" * 60,
+                  f"Iter time: {iteration_time:.2f} sec",
+                  link,
+                  sep="\n",
+                  end=f"\n{'-' * 60}\n")
             continue
 
         timed_out_requests = 0
@@ -180,6 +183,7 @@ def features_scraping(driver,
             item = BeautifulSoup(item.text, 'html.parser')
             information.append(item.text)
 
+        # todo: scrapovat taky stát aby se dala filtrovat zeme
         # put all labels and all info regarding a given reality into and prepare them as a row
         dict_ = {}
         link_split = link.split("/")
@@ -189,7 +193,8 @@ def features_scraping(driver,
         dict_[c.TYPE] = link_split[6]
         location = link_split[7]
         location_split = location.split("-")
-        dict_[c.LOCATION] = f"{location_split[0].title()} {location_split[1]} {location_split[2]}"
+        dict_[
+            c.LOCATION] = f"{location_split[0].title()} {location_split[1]} {location_split[2]}"  # todo: update
         dict_[c.DATETIME_SCRAPED] = time.ctime()
 
         valid_columns = [c.TOTAL_PRICE,
@@ -216,16 +221,18 @@ def features_scraping(driver,
         average_iter_time.append(iteration_time)
         print(f"Iter curr session {index_session}, "
               f"Iter total: {index_all_data}, "
-              f"Iter time: {iteration_time:.2f} sec\n"
-              f"Average time of all iterations: {np.mean(average_iter_time):.2f} sec\n"
-              f"{new_row.columns}\n"
-              f"{link}\n"
-              f"{'-' * 60}\n")
+              f"Iter time: {iteration_time:.2f} sec",
+              f"Average time of all iterations: {np.mean(average_iter_time):.2f} sec",
+              f"{new_row.columns}",
+              f"{link}"
+              f"{'-' * 60}",
+              sep="\n")
 
-        if index_session % 1000 == 0:
+        if index_session % batch_size == 0:
             send_mail.send_email(f"Index: {index_session},"
                                  f"Avg i time {np.mean(average_iter_time):.2f}s")
 
+        # todo: this might be possible to delete
         # saving rescraped data and end feature scraping for good
         if rescraping and index_session == data.shape[0] - 1:
             final_dataframe.to_csv(f"batches/rescraped.csv", encoding="UTF-8")
@@ -235,9 +242,8 @@ def features_scraping(driver,
         elif (index_session and index_session % batch_size == 0) \
                 or index_session == data.shape[0] - 1:
             print(f"Saving batch. Completed iterations total: {index_all_data}",
-                  end=f"\n{'-' * 60}\n")
-            final_dataframe.to_csv(f"batches/{index_all_data}.csv",
-                                   encoding="UTF-8")
+                  f"\n{'-' * 60}\n")
+            final_dataframe.to_csv(f"batches/{index_all_data}.csv", encoding="UTF-8")
             final_dataframe = pd.DataFrame()
 
             end_batch = time.perf_counter()
@@ -254,13 +260,11 @@ def features_scraping(driver,
     # session statistic metrics
     end_session = time.perf_counter()
     scraping_time = end_session - start_session
+    send_mail.send_email(subject="Scraping completed")
     print(f"Scraping features took this session: {scraping_time:.2f} sec")
     print(f"Average time of all iterations: {np.mean(average_iter_time)} sec",
           "#" * 60,
           sep="\n")
-    send_mail.send_email(subject="Scraping completed")
 
 # C:\Users\lazni\PycharmProjects\Real_Estate_Analysis
 # =KDYŽ(NEBO(Tabulka1[[#Tento řádek];[Sloupec8]]<>"";Tabulka1[[#Tento řádek];[Sloupec15]]<>"");1;0)
-
-# todo: scrapovat taky stat aby se dala filtrovat zeme
