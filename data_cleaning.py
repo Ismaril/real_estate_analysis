@@ -89,38 +89,56 @@ def clean_feature_data():
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
     data = data.loc[filter_]
 
-    # drop first unwanted stuff
+    # drop unwanted stuff
     data.drop_duplicates(subset=[c.LINK], inplace=True)
-    data.drop([c.UNNAMED,  # todo: check this
-               c.LINK,
-               c.DATETIME_SCRAPED], #todo: also might delete?
-              inplace=True,
-              axis=1)
+    data.drop([c.LINK, c.DATETIME_SCRAPED], inplace=True, axis=1)
     for column in [c.LAND_AREA, c.USABLE_AREA, c.GARDEN_AREA]:
         data = data.loc[data[column] != 1.0]
 
     # drop empty cells in usable area in flats & houses
     filter_ = (data[c.PROPERTY].isin([c.FLAT, c.HOUSE])) \
-              & (pd.isna(data[c.USABLE_AREA]))
+        & (pd.isna(data[c.USABLE_AREA]))
     data = data.loc[~filter_]
 
-    # drop empty cells in usable area in houses & lands
+    # drop empty cells in land area in houses & lands
     filter_ = data[c.PROPERTY].isin([c.LAND, c.HOUSE]) \
-              & (pd.isna(data[c.LAND_AREA]))
+        & (pd.isna(data[c.LAND_AREA]))
     data = data.loc[~filter_]
 
-    # todo: this I should update based on scraping of different source of cities
-    # rename towns to single word, filter towns
+    # this block written in plain python (would it be possible with pandas only?)
+    towns = []
+    is_foreign = []
+    for location, location2 in zip(data[c.LOCATION], data[c.LOCATION2]):
+
+        # let top 9 cities have their full name
+        for town in c.TOWNS_TOP9:
+            location_merged = "".join(location.split("-")).lower()
+            if town in location_merged:
+                towns.append(town)
+                break
+        else:
+            towns.append(location)
+
+        # locate foreign countries
+        for country in c.FOREIGN_COUNTRIES:
+            if country in location2:
+                is_foreign.append(True)
+                break
+        else:
+            is_foreign.append(False)
+    data[c.LOCATION] = towns
+    data[c.IS_FOREIGN] = is_foreign
+
+    # rename towns to single word
     data[c.LOCATION] = data[c.LOCATION].str.split()
     data[c.LOCATION] = data[c.LOCATION].str[0]
     data[c.LOCATION] = data[c.LOCATION].astype(str)
 
-    filter_ = data[c.LOCATION].apply(lambda x: True if x.isalpha() else False)
-    data = data.loc[filter_]
-
+    # multiple filters of location
     filter_ = data[c.LOCATION].notna() \
-              & data[c.LOCATION].apply(lambda x: True if x != "nan" else False) \
-              & ~data[c.LOCATION].isin(c.NOT_VALID_TOWNS)
+        & data[c.LOCATION].apply(lambda x: True if x.isalpha() else False) \
+        & data[c.LOCATION].apply(lambda x: True if x != "nan" else False) \
+        & ~data[c.IS_FOREIGN] == True
     data = data.loc[filter_]
 
     # format price columns to floats (from strings)
@@ -149,7 +167,8 @@ def clean_feature_data():
     # create column of m2/price
     data[c.PRICE_M2] = data[c.TOTAL_PRICE] / data[c.TOTAL_AREA]
     data[c.PRICE_M2] = data[c.PRICE_M2].astype(int)
-    print(data.info())
+
+    # save
     data.to_csv(c.FEATURES_CLEANED)
 
 
@@ -169,13 +188,13 @@ def aggregate_feature_data():
     for i in range(3):
         for type_ in c.TYPES_FLAT + c.TYPES_HOUSE + c.TYPES_LAND:
             if not i:
-                filter_ = (data[c.LOCATION] == c.TOWNS_PRAGUE[0])\
+                filter_ = (data[c.LOCATION] == c.TOWNS_PRAGUE[0]) \
                           & (data[c.TYPE] == type_)
             elif i == 1:
-                filter_ = data[c.LOCATION].isin(c.TOWNS_TOP9)\
+                filter_ = data[c.LOCATION].isin(c.TOWNS_TOP9) \
                           & (data[c.TYPE] == type_)
             else:
-                filter_ = ~data[c.LOCATION].isin(c.TOWNS_PRAGUE + c.TOWNS_TOP9)\
+                filter_ = ~data[c.LOCATION].isin(c.TOWNS_PRAGUE + c.TOWNS_TOP9) \
                           & (data[c.TYPE] == type_)
 
             data_filtered = data.loc[filter_]
@@ -192,44 +211,14 @@ def aggregate_feature_data():
     new_data[c.PERIOD] = [datetime.date.today()]
 
     try:
+        # results already exist
         prices_all_months = pd.read_csv(c.RESULTS)
         prices_all_months = pd.concat([prices_all_months, new_data])
         prices_all_months.to_csv(c.RESULTS, index=False)
+
+        # inserting results for the first time
     except pd.errors.EmptyDataError:
         new_data.to_csv(c.RESULTS, index=False)
-
-
-def readable_time(seconds: int) -> str:
-    """
-    Convert seconds into hh:mm:ss
-
-    :returns: str
-    """
-    mins_secs = divmod(seconds, 60)
-    hrs_mins = divmod(mins_secs[0], 60)
-    seconds = mins_secs[1]
-    minutes = hrs_mins[1]
-    hours = hrs_mins[0]
-    result = ""
-
-    for digit in (hours, minutes, seconds):
-        result += f"0{digit} :" if digit < 10 else f"{digit} :"
-    pre_result = list(result[:-1])
-    pre_result[2] = "h"
-    pre_result[6] = "m"
-    pre_result[10] = "s"
-    result = "".join(pre_result)
-
-    return result
-
-
-# todo: possible do delete in next scraping?
-def prepare_for_rescraping():
-    data = pd.read_csv(c.FEATURES)
-    filter_ = (pd.isna(data[c.TOTAL_PRICE])) & (pd.isna(data[c.ON_SALE]))
-    data = data.loc[filter_][c.LINK]
-    data.to_csv("links_to_properties/links_to_properties_unsuccessful.csv")
-    return pd.read_csv("archive/links_to_properties_unsuccessful.csv")
 
 
 def archive_datasets():
@@ -244,7 +233,7 @@ def archive_datasets():
     os.rename(c.FEATURES, f"{c.ARCHIVE}/{file_number}.csv")
 
 
-def delete_all_batches():
+def delete_unwanted_property_files():
     """
     Delete all files that were formerly downloaded as
     batches of features from the next
@@ -255,7 +244,8 @@ def delete_all_batches():
         os.remove(f"{c.BATCHES}/{file}")
 
     os.remove(c.FEATURES_CLEANED)
-
+    os.remove(c.PROPERTIES)
+    os.remove(c.PROPERTIES_CLEANED)
 
 def delete_unwanted_sitemap_files():
     """
