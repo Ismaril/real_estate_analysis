@@ -2,6 +2,7 @@
 LINK = "Link:"
 LOC = "loc"
 LOCATION = "Lokace:"
+LOCATION2 = "Lokace_:"
 UNNAMED = "Unnamed: 0"
 LASTMOD = "lastmod"
 DATETIME_SCRAPED = "Řádek vytvořen:"
@@ -20,9 +21,10 @@ SALE = "Sleva:"
 TOTAL_AREA = "Celková plocha:"
 PRICE_M2 = "Cena metr2"
 PERIOD = "Měsíc"
+IS_FOREIGN = "Je zahraniční:"
 
 # specifications
-# source declaration for constant below (watch index position here)
+# TYPES_PROPERTIES is declaration for constant below (watch index position here)
 TYPES_PROPERTIES = ("byt", "dum", "pozemek")
 TYPES_FLAT = ["1+kk", "1+1",
               "2+kk", "2+1",
@@ -49,14 +51,18 @@ SITEMAP = "sitemap"
 SHORT_PRAGUE = "Pra"
 SHORT_TOP9 = "T_9"
 SHORT_REST = "Oth"
-TOWNS_REST_TITLE = "Zbytek ČR"
+SEPARATOR = f"\n{'-' * 60}\n"
 FLAT = TYPES_PROPERTIES[0]
 HOUSE = TYPES_PROPERTIES[1]
 LAND = TYPES_PROPERTIES[2]
+TOWNS_TOP9_T = f"Brno, Ostrava, Plzeň, Liberec, Olomouc, České Budějovice," \
+               f"Hradec Králové, Ustí nad Labem, Pardubice"
+TOWNS_REST_T = "Celá ČR mimo 10 největších měst"
 
 # directories
 BATCHES = "batches"
 ARCHIVE = "archive"
+LINKS = "links_to_properties"
 DOWNLOADS = "C:/Users/lazni/Downloads"
 
 # csv datasets
@@ -81,58 +87,13 @@ DRIVER_ADDRESS = "chrome_driver/chromedriver.exe"
 SITE_MAP = "https://www.sreality.cz/sitemap.xml"
 
 # locations
-TOWNS_PRAGUE = ["Praha"]
-TOWNS_TOP9 = ["Brno", "Ostrava", "Plzen", "Liberec", "Olomouc", "Ceske Budejovice",
-              "Hrade Kralove", "Usti nad Labem", "Pardubice"]
+TOWNS_PRAGUE = ["praha"]
+
+TOWNS_TOP9 = ["brno", "ostrava", "plzen", "liberec", "olomouc", "ceskebudejovice",
+              "hradeckralove", "ustinadlabem", "pardubice"]
+
 TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP9
-NOT_VALID_TOWNS = ["Adeje", "Agia", "Agros", "Aguilas", "Aheloy", "Al", "Alanya",
-                   "Algarrobo", "Algorfa", "Alicante", "Altea", "Aluthgama",
-                   "Amarilla", "Anglerweg", "Annaberg", "Antalya", "Apartamentos",
-                   "Aptera", "Arzl", "Aspe", "Avenida", "Avenue", "Avinguda",
-                   "Avola", "Avtobus", "Ayia", "Baan", "Bad", "Badesi", "Balcik",
-                   "Bar", "Barcelona", "Barriada", "Bayerisch", "Bdeneves",
-                   "Becici", "Benagalbon", "Benahavis", "Benalauria", "Benalmadena",
-                   "Benatky", "Benidorm", "Benijofar", "Benissa", "Bibinje", "Biograd",
-                   "Bologna", "Bosana", "Brac", "Bratislava", "Brodarica", "Bus",
-                   "Burgas", "Byala", "Cabo", "Cabopino", "Cagliari", "Calahonda",
-                   "Calasetta", "Calasparra", "Callao", "Calle", "Camping", "Campobello",
-                   "Cancun", "Cannigione", "Carevo", "Carrer", "Cartagena", "Cartama",
-                   "Casares", "Cemagi", "Cesarica", "Ciovo", "Ciudad", "Costa",
-                   "Country", "Crikvenica", "Cuevas", "Cuneo", "Czech", "Daskabat",
-                   "Davos", "Daya", "Dehesa", "Desenzano", "Detroit", "Dolores",
-                   "Dorfstra", "Drac", "Drapanos", "Duba", "Dubaj", "Dubrovnik",
-                   "Duga", "El", "Elenite", "Eraclea", "Eracleamare", "Ericeira",
-                   "Erpuzice", "Estepona", "Evan", "Famagusta", "Fasnia", "Fazana",
-                   "Fieberbrunn", "Figueres", "Finestrat", "Five", "Formentera",
-                   "Fraga", "Fuengirola", "Fugen", "Fulnek", "Gargellen",
-                   "Geyersberg", "Golem", "Golf", "Gorica", "Goritsa",
-                   "Gornji", "Gosau", "Gracani", "Grafenwiesen", "Gralska",
-                   "Granadilla", "Grebastica", "Greslove", "Grobming", "Gruna",
-                   "Gruzie", "Grygov", "Guardamar", "Habaraduwa", "Haidmuhle",
-                   "Hinterstoder", "Hollersbach", "Hospental", "Hurghada", "Chalkidiki",
-                   "Ibiza", "Ishem", "Jacarilla", "Jalan", "Jalubi", "Jonske", "Kableshkovo",
-                   "Kali", "Kambia", "Kassandreia", "Kastela", "Kastellani", "Katschberg",
-                   "Kavaja", "Kavarna", "Kokkino", "Korfu", "Kosharitsa", "Krk", "L", "La",
-                   "Las", "Laz", "Lite", "Liznjan", "Lkan", "Lnare", "Lozenets", "Luxurious",
-                   "Madrigal", "Mahmutlar", "Makarska", "Malaga", "Male", "Mandre", "Manilva",
-                   "Mar", "Marathokefala", "Marbella", "Mattinata", "Miami", "Montesilvano",
-                   "Moos", "Moraira", "Murciana", "Murter", "nan", "Nassfeld", "Neo",
-                   "Nesebar", "Noruega", "Novalja", "Novelda", "Novi", "Novigrad", "Oberndorf",
-                   "Omis", "Ondara", "Opatija", "Orihuela", "Oscadnica", "Pafos", "Pag", "Pagi",
-                   "Pachino", "Pakostane", "Pangandaran", "Parque", "Pattaya", "Penthous", "Penthouse",
-                   "Podgora", "Polen", "Polop", "Pomorie", "Portugalsko", "Posedarje", "Posna",
-                   "Povljana", "Primorsko", "Primosten", "Privlaka", "Puerto", "Pula", "Pulpi",
-                   "Punat", "Qerret", "Rab", "Ravda", "Razlog", "Rennweg", "Rentalsbcn", "Roatan",
-                   "Rogachevo", "Rogoznica", "Rrashbull", "Safa", "Safaga", "Sahl", "San",
-                   "Sandland", "Sankt", "Saranda", "Sassofortino", "Savudrija", "Scalea",
-                   "Shengjin", "Schladming", "Schrattenberg", "Sidari", "Simuni", "Sira",
-                   "Sirmione", "Sisan", "Sistiana", "Siviri", "Skil", "Slough", "Sofie",
-                   "Sofitel", "Soma", "Sommatino", "Son", "Souvenirs", "Sozopol", "Spanelsko",
-                   "Spiegelau", "Split", "Splitska", "Srbsko", "Srima", "St", "Starigrad",
-                   "Sucuraj", "Sumartin", "Supetar", "Syvota", "Tabanan", "Talin", "Tankovo",
-                   "Tauplitz", "The", "Torre", "Torremolinos", "Torrevieja", "Torrox",
-                   "Tossa", "Treffen", "Trezzo", "Tribunj", "Trikomo", "Trogir", "Tulum",
-                   "Turanj", "Turcianske", "Ugljan", "Ulcinj", "Umag", "Urbanizacion",
-                   "Valencie", "Vera", "Via", "Villa", "Villajoyosa", "Villamartin", "Villaricos",
-                   "Vinjerac", "Vinkuran", "Vir", "Waldschmidtstra", "Xabia", "Zahreb", "Zakynthos",
-                   "Zell", ]
+
+FOREIGN_COUNTRIES = ["Španělsko", "Polsko", "Bulharsko"]  # todo: update these
+
+
