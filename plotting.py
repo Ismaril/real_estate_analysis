@@ -10,7 +10,7 @@ FONT_SIZE_TITLE = 25
 
 # this function I had to copy from the net... and adjust
 @ticker.FuncFormatter
-def major_formatter(x: float | int, pos):
+def _major_formatter(x: float | int, pos):
     """
     Format labels in a given plot to a format where
     each 3 digits are separated by underscore
@@ -22,7 +22,7 @@ def major_formatter(x: float | int, pos):
     return f'{int(x):_}'
 
 
-def plot_(prefix: str,
+def _plot(prefix: str,
           property_types: list | tuple,
           plot_title_type: str,
           plot_title_city: list | tuple | str):
@@ -65,7 +65,7 @@ def plot_(prefix: str,
                 bbox=dict(facecolor="yellow", edgecolor="black"), color="black")
 
         # format labels at y axis
-        ax.yaxis.set_major_formatter(major_formatter)
+        ax.yaxis.set_major_formatter(_major_formatter)
 
         # hide ticks on the x axis besides the bottom
         if row < x - 1:
@@ -88,19 +88,17 @@ def plot_all():
     :return: None
     """
     for prefix, title in zip([c.SHORT_PRAGUE, c.SHORT_TOP9, c.SHORT_REST],
-                             [c.TOWNS_PRAGUE, c.TOWNS_TOP9, c.TOWNS_REST_TITLE]):
-        plot_(prefix=prefix,
+                             [c.TOWNS_PRAGUE[0].title(), c.TOWNS_TOP9_T, c.TOWNS_REST_T]):
+        _plot(prefix=prefix,
               property_types=c.TYPES_FLAT,
               plot_title_type=c.FLAT,
               plot_title_city=title)
-        plot_(prefix=prefix,
+        _plot(prefix=prefix,
               property_types=c.TYPES_HOUSE,
               plot_title_type=c.HOUSE,
               plot_title_city=title)
-        plot_(prefix=prefix,
+        _plot(prefix=prefix,
               property_types=c.TYPES_LAND,
               plot_title_type=c.LAND,
               plot_title_city=title)
 
-
-plot_all()
