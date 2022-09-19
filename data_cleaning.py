@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import constants as c
+import utilities
 
 
 def clean_raw_data():
@@ -61,21 +62,6 @@ def clean_raw_data():
     print(data)
 
 
-def concatenate_batches():
-    """
-    Concatenate all batches that were downloaded during feature
-    scraping, into complete dataset
-
-    :returns: None
-    """
-    result = pd.DataFrame()
-    for file in os.listdir(c.BATCHES):
-        result = pd.concat([result, pd.read_csv(f"{c.BATCHES}/{file}")])
-    result.drop([c.UNNAMED], inplace=True, axis=1)  # todo: might delete?
-    result.to_csv(c.FEATURES)
-    print("Batches concatenated")
-
-
 def clean_feature_data():
     """
     Clean and manipulate downloaded raw features into the state that can be
@@ -83,7 +69,7 @@ def clean_feature_data():
 
     :returns: None
     """
-    data = pd.read_csv(c.FEATURES)
+    data = pd.read_csv(c.FEATURES_ALL)
 
     # filter data where total price or sale price are missing
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
@@ -91,7 +77,6 @@ def clean_feature_data():
 
     # drop unwanted stuff
     data.drop_duplicates(subset=[c.LINK], inplace=True)
-    data.drop([c.LINK, c.DATETIME_SCRAPED], inplace=True, axis=1)
     for column in [c.LAND_AREA, c.USABLE_AREA, c.GARDEN_AREA]:
         data = data.loc[data[column] != 1.0]
 
@@ -126,11 +111,12 @@ def clean_feature_data():
                 break
         else:
             is_foreign.append(False)
+
     data[c.LOCATION] = towns
     data[c.IS_FOREIGN] = is_foreign
 
     # rename towns to single word
-    data[c.LOCATION] = data[c.LOCATION].str.split()
+    data[c.LOCATION] = data[c.LOCATION].str.split("-")
     data[c.LOCATION] = data[c.LOCATION].str[0]
     data[c.LOCATION] = data[c.LOCATION].astype(str)
 
@@ -169,7 +155,7 @@ def clean_feature_data():
     data[c.PRICE_M2] = data[c.PRICE_M2].astype(int)
 
     # save
-    data.to_csv(c.FEATURES_CLEANED)
+    data.to_csv(c.FEATURES_CLEANED, index=False)
 
 
 def aggregate_feature_data():
@@ -210,18 +196,11 @@ def aggregate_feature_data():
                 new_data[f"{c.SHORT_REST} {type_}"] = [price]
     new_data[c.PERIOD] = [datetime.date.today()]
 
-    try:
-        # results already exist
-        prices_all_months = pd.read_csv(c.RESULTS)
-        prices_all_months = pd.concat([prices_all_months, new_data])
-        prices_all_months.to_csv(c.RESULTS, index=False)
-
-        # inserting results for the first time
-    except pd.errors.EmptyDataError:
-        new_data.to_csv(c.RESULTS, index=False)
+    utilities.csv_concatenation(main_file=c.RESULTS,
+                                new_data=new_data)
 
 
-def archive_datasets():
+def archive_dataset():
     """
     Rename feature dataset and move it into new location - archive it.
 
@@ -230,24 +209,24 @@ def archive_datasets():
     file_number = len(os.listdir(c.ARCHIVE))
 
     # renames and also moves the file to new location
-    os.rename(c.FEATURES, f"{c.ARCHIVE}/{file_number}.csv")
+    os.rename(c.FEATURES_ALL, f"{c.ARCHIVE}/{file_number}.csv")
 
 
-def delete_unwanted_property_files():
+def delete_data():
     """
-    Delete all files that were formerly downloaded as
-    batches of features from the next
+    Delete and clear all files that are not gonna be needed.
 
     :return: None
     """
-    for file in os.listdir(c.BATCHES):
-        os.remove(f"{c.BATCHES}/{file}")
+    with open("completed_index.txt", "w") as file:
+        file.write("")
 
     os.remove(c.FEATURES_CLEANED)
     os.remove(c.PROPERTIES)
     os.remove(c.PROPERTIES_CLEANED)
 
-def delete_unwanted_sitemap_files():
+
+def delete_sitemap_files():
     """
     Delete all 'sitemap' files in downloads directory
 
