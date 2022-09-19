@@ -55,20 +55,21 @@ SEPARATOR = f"\n{'-' * 60}\n"
 FLAT = TYPES_PROPERTIES[0]
 HOUSE = TYPES_PROPERTIES[1]
 LAND = TYPES_PROPERTIES[2]
-TOWNS_TOP9_T = f"Brno, Ostrava, Plzeň, Liberec, Olomouc, České Budějovice," \
+TOWNS_TOP9_T = f"Brno, Ostrava, Plzeň, Liberec, Olomouc, České Budějovice, " \
                f"Hradec Králové, Ustí nad Labem, Pardubice"
 TOWNS_REST_T = "Celá ČR mimo 10 největších měst"
 
 # directories
 BATCHES = "batches"
 ARCHIVE = "archive"
+FEATURES = "features"
 LINKS = "links_to_properties"
 DOWNLOADS = "C:/Users/lazni/Downloads"
 
 # csv datasets
 PROPERTIES = "links_to_properties/links_to_properties.csv"
 PROPERTIES_CLEANED = "links_to_properties/links_to_properties_cleaned.csv"
-FEATURES = "features/features_all.csv"
+FEATURES_ALL = "features/features_all.csv"
 FEATURES_CLEANED = "features/features_cleaned.csv"
 RESULTS = "result/prices_all_months.csv"
 
@@ -94,6 +95,32 @@ TOWNS_TOP9 = ["brno", "ostrava", "plzen", "liberec", "olomouc", "ceskebudejovice
 
 TOWNS_REST = TOWNS_PRAGUE + TOWNS_TOP9
 
-FOREIGN_COUNTRIES = ["Španělsko", "Polsko", "Bulharsko"]  # todo: update these
-
-
+FOREIGN_COUNTRIES = ["Albánie",
+                     "Bulharsko",
+                     "Černá Hora",
+                     "Chorvatsko",
+                     "Dominikánská republika",
+                     "Egypt",
+                     "Francie",
+                     "Gruzie",
+                     "Itálie",
+                     "Kapverdy",
+                     "Kostarika",
+                     "Kypr",
+                     "Maďarsko",
+                     "Mexiko",
+                     "Německo",
+                     "Norsko",
+                     "Polsko",
+                     "Portugalsko",
+                     "Rakousko",
+                     "Řecko",
+                     "Slovenská Republika",
+                     "Španělsko",
+                     "Spojené arabské emiráty",
+                     "Spojené státy americké",
+                     "Švýcarsko",
+                     "Thaisko",
+                     "Turecko",
+                     "Ukrajina",
+                     "Velká Británie"]
