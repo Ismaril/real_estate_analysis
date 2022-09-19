@@ -1,6 +1,7 @@
 import time
 import smtplib
 import constants as c
+import pandas as pd
 
 with open(f"{c.DOWNLOADS}/robot_conect.txt", "r") as file:
     file_complete = file.read().split("\n")
@@ -73,3 +74,24 @@ def readable_time(seconds: int) -> str:
     result = "".join(pre_result)
 
     return result
+
+
+def csv_concatenation(main_file: str,
+                      new_data: pd.DataFrame,
+                      index_=False):
+    """
+    :param main_file: csv file into which we will append new data
+    :param new_data: dataframe that will be appended to main file
+    :param index_: if False, skip indexing column in pd dataframe
+    :return:
+    """
+    # results already exist, therefore append new to old data
+    try:
+        df = pd.concat([pd.read_csv(main_file), new_data])
+        df.to_csv(main_file, index=index_)
+
+    # inserting results for the first time
+    except pd.errors.EmptyDataError:
+        new_data.to_csv(main_file, index=index_)
+    except FileNotFoundError:
+        new_data.to_csv(main_file, index=index_)
