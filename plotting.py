@@ -22,6 +22,7 @@ def _major_formatter(x: float | int, pos):
     return f'{int(x):_}'
 
 
+# todo: refactoring??
 def _plot(prefix: str,
           property_types: list | tuple,
           plot_title_type: str,
@@ -41,13 +42,14 @@ def _plot(prefix: str,
     plt.style.use("dark_background")
 
     nr_types = len(property_types)
+    is_odd = True if nr_types % 2 != 0 else False
 
     # add +1 if odd number, to get even number of graphs at a main plot
-    nr_types = nr_types + 1 if nr_types % 2 != 0 else nr_types
+    nr_types = nr_types + 1 if is_odd else nr_types
 
     x, y = int(nr_types / 2), 2
-    fig, axes = plt.subplots(x, y, figsize=(16, 9))
-
+    fig, axes = plt.subplots(x, y, figsize=(19.2, 10.8))
+    x_ticks_ = None
     for i, type_ in enumerate(property_types):
         row = i
         column = 0
@@ -60,6 +62,9 @@ def _plot(prefix: str,
 
         ax.plot(data[c.PERIOD], data[f"{prefix} {type_}"], "o-", c="red")
 
+        if not i:
+            x_ticks_ = ax.get_xticks()
+
         # add text to each graph
         ax.text(0.05, 0.80, type_, transform=ax.transAxes,
                 bbox=dict(facecolor="yellow", edgecolor="black"), color="black")
@@ -67,15 +72,25 @@ def _plot(prefix: str,
         # format labels at y axis
         ax.yaxis.set_major_formatter(_major_formatter)
 
-        # hide ticks on the x axis besides the bottom
+        # hide ticks on the x axis besides the bottom. Applies for bottom subplots
+        #   when number of subplots in even
         if row < x - 1:
             ax.set_xticks("", visible=False)
+
+        # make sure that the x ticks are visible also for column that will end
+        #   with uneven number of subplots
+        if i == len(property_types) - 1:
+            ax.set_xticks(x_ticks_)
+
+        # delete a subplot when it is empty
+        if is_odd and column and i == len(property_types) - 1:
+            fig.delaxes(axes[-1][-1])
 
     # add some description of whole plot and of each axis
     fig.text(0.5, 0.94, f"{plot_title_type}", ha="center", fontsize=FONT_SIZE_TITLE)
     fig.text(0.5, 0.90, f"{plot_title_city}", ha="center", fontsize=FONT_SIZE)
     fig.text(0.06, 0.45, r"$\frac{Cena}{m^{2}}$ [CZK]", ha="center", fontsize=FONT_SIZE, rotation=90)
-    fig.text(0.5, 0.02, "Období [Měsíce]", ha="center", fontsize=FONT_SIZE)
+    fig.text(0.5, 0.02, "Čas [Měsíce]", ha="center", fontsize=FONT_SIZE)
 
     # save as png img
     plt.savefig(f"result/{prefix} {plot_title_type}.png")
@@ -101,4 +116,3 @@ def plot_all():
               property_types=c.TYPES_LAND,
               plot_title_type=c.LAND,
               plot_title_city=title)
-
