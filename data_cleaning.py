@@ -75,19 +75,22 @@ def clean_feature_data():
     filter_ = ~(pd.isna(data[c.TOTAL_PRICE])) | ~(pd.isna(data[c.ON_SALE]))
     data = data.loc[filter_]
 
-    # drop unwanted stuff
+    # drop first unwanted stuff
     data.drop_duplicates(subset=[c.LINK], inplace=True)
     for column in [c.LAND_AREA, c.USABLE_AREA, c.GARDEN_AREA]:
         data = data.loc[data[column] != 1.0]
+    # todo: write this in a general way through regex ...not statically
+    filter_ = data[c.TOTAL_PRICE] == " Kč za nemovitost"
+    data = data.loc[~filter_]
 
     # drop empty cells in usable area in flats & houses
     filter_ = (data[c.PROPERTY].isin([c.FLAT, c.HOUSE])) \
-        & (pd.isna(data[c.USABLE_AREA]))
+              & (pd.isna(data[c.USABLE_AREA]))
     data = data.loc[~filter_]
 
     # drop empty cells in land area in houses & lands
     filter_ = data[c.PROPERTY].isin([c.LAND, c.HOUSE]) \
-        & (pd.isna(data[c.LAND_AREA]))
+              & (pd.isna(data[c.LAND_AREA]))
     data = data.loc[~filter_]
 
     # this block written in plain python (would it be possible with pandas only?)
@@ -122,9 +125,9 @@ def clean_feature_data():
 
     # multiple filters of location
     filter_ = data[c.LOCATION].notna() \
-        & data[c.LOCATION].apply(lambda x: True if x.isalpha() else False) \
-        & data[c.LOCATION].apply(lambda x: True if x != "nan" else False) \
-        & ~data[c.IS_FOREIGN] == True
+              & data[c.LOCATION].apply(lambda x: True if x.isalpha() else False) \
+              & data[c.LOCATION].apply(lambda x: True if x != "nan" else False) \
+              & ~data[c.IS_FOREIGN] == True
     data = data.loc[filter_]
 
     # format price columns to floats (from strings)
