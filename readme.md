@@ -1,9 +1,9 @@
-### Aim of the project
+## Aim of the project
 The aim of the project was to get some
 insight & feeling about current property
-market.
+market (2022/2023).
 
-### Process pipeline:
+## Process pipeline:
 1.Getting the data
 - downloading sitemap files, extracting and appending
 all of them into one file (links to all webpages)
@@ -26,18 +26,20 @@ the rest of republic) and property types
 4.Repeating the process once per month
 
 
-###Process is fully automated:
+## Process is automated:
 Input: Sitemap of www.sreality.cz \
 Output: Plots / Data visualisation
 
-###Limitation:
+## Limitation:
 Since the program has to scrape cca 60_000 sites, \
 scraping can take cca 50 hours. \
-No multiprocessing implemented.
 
-###Status of the project:
+## Todo:
+Below tasks are here not mandatory but nice to have.
+- Refactoring 
+- Multiprocessing?
+- Scheduling a task to run the program every month.
+
+## Status of the project:
 Functional
 
-###Todo:
-Refactoring \
-Multiprocessing?
