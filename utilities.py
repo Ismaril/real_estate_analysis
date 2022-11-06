@@ -3,6 +3,7 @@ import smtplib
 import constants as c
 import pandas as pd
 
+# login...
 with open(f"{c.DOWNLOADS}/robot_conect.txt", "r") as file:
     file_complete = file.read().split("\n")
     ADDRESS = file_complete[0]
@@ -12,23 +13,24 @@ with open(f"{c.DOWNLOADS}/robot_conect.txt", "r") as file:
 def send_email(subject: str = None, body: str = None):
     """
 
-    :param subject: Text string which will represent subject of a mail
-    :param body: Text string which will represent main text of a mail
+    :param subject: Text string which will represent subject of a mail.
+    :param body: Text string which will represent main text of a mail.
+
     :return: None
     """
     with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-        smtp.ehlo()  # identify us with mail server we are using
-        smtp.starttls()  # encrypt our traffic
-        smtp.ehlo()  # identify us again as an encrypted connection
+        smtp.ehlo()  # Identify us with mail server we are using.
+        smtp.starttls()  # Encrypt our traffic.
+        smtp.ehlo()  # Identify us again as an encrypted connection.
 
         smtp.login(ADDRESS, PASS)
-        msg = f"Subject: {subject}\n\n{body}"  # weird syntax...has to really be like this by default
+        msg = f"Subject: {subject}\n\n{body}"  # Weird syntax...has to really be like this by default...
         smtp.sendmail(from_addr=ADDRESS, to_addrs=ADDRESS, msg=msg)
 
 
 class Performance:
     """
-    Measure performance of code in seconds
+    Measure performance of code in seconds.
     """
 
     def __init__(self, ):
@@ -37,7 +39,7 @@ class Performance:
     @staticmethod
     def start() -> float:
         """
-        Start measuring performance
+        Start measuring performance.
 
         :return: float
         """
@@ -45,7 +47,7 @@ class Performance:
 
     def end(self) -> float:
         """
-        End measuring performance
+        End measuring performance.
 
         :return: float
         """
@@ -80,17 +82,18 @@ def csv_concatenation(main_file: str,
                       new_data: pd.DataFrame,
                       index_=False):
     """
-    :param main_file: csv file into which we will append new data
-    :param new_data: dataframe that will be appended to main file
-    :param index_: if False, skip indexing column in pd dataframe
-    :return:
+    :param main_file: Csv file into which we will append new data.
+    :param new_data: Dataframe that will be appended to main file.
+    :param index_: If False, skip indexing column in pd dataframe.
+
+    :return: None
     """
-    # results already exist, therefore append new to old data
+    # Results already exist, therefore append new to old data.
     try:
         df = pd.concat([pd.read_csv(main_file), new_data])
         df.to_csv(main_file, index=index_)
 
-    # inserting results for the first time
+    # Inserting results for the first time.
     except pd.errors.EmptyDataError:
         new_data.to_csv(main_file, index=index_)
     except FileNotFoundError:

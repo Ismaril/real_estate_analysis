@@ -8,21 +8,21 @@ FONT_SIZE = 20
 FONT_SIZE_TITLE = 25
 
 
-# this function I had to copy from the net... and adjust
+# This function was copied from the net and adjusted.
 @ticker.FuncFormatter
 def _major_formatter(x: float | int, pos):
     """
     Format labels in a given plot to a format where
-    each 3 digits are separated by underscore
+    each 3 digits are separated by underscore.
 
-    :param x: Label to be formatted
+    :param x: Label to be formatted.
     :param pos: N/A
+
     :return: str
     """
     return f'{int(x):_}'
 
 
-# todo: refactoring??
 def _plot(prefix: str,
           property_types: list | tuple,
           plot_title_type: str,
@@ -30,11 +30,12 @@ def _plot(prefix: str,
     """
     Put all cleaned and aggregated data into visual form. This is the result of this project.
 
-    :param prefix: Shortcut of a given area
-    :param property_types: subtypes of flat/house/land
+    :param prefix: Shortcut of a given area.
+    :param property_types: Subtypes of flat/house/land.
     :param plot_title_type: name of plot 1
     :param plot_title_city: name of plot 2
-    :return: matplotlib.pyplot.plot
+
+    :return: None
     """
 
     plot_title_type = plot_title_type.upper()
@@ -44,7 +45,7 @@ def _plot(prefix: str,
     nr_types = len(property_types)
     is_odd = True if nr_types % 2 != 0 else False
 
-    # add +1 if odd number, to get even number of graphs at a main plot
+    # Add +1 if odd number, to get even number of graphs at a main plot.
     nr_types = nr_types + 1 if is_odd else nr_types
 
     x, y = int(nr_types / 2), 2
@@ -54,7 +55,8 @@ def _plot(prefix: str,
         row = i
         column = 0
 
-        if row >= x:  # start new column if the first one is already at the bottom of main plot
+        # Start new column if the first one is already at the bottom of main plot.
+        if row >= x:
             row -= x
             column = 1
 
@@ -65,40 +67,40 @@ def _plot(prefix: str,
         if not i:
             x_ticks_ = ax.get_xticks()
 
-        # add text to each graph
+        # Add text to each graph.
         ax.text(0.05, 0.80, type_, transform=ax.transAxes,
                 bbox=dict(facecolor="yellow", edgecolor="black"), color="black")
 
-        # format labels at y axis
+        # Format labels at y axis.
         ax.yaxis.set_major_formatter(_major_formatter)
 
-        # hide ticks on the x axis besides the bottom. Applies for bottom subplots
-        #   when number of subplots in even
+        # Hide ticks on the x axis besides the bottom. Applies for bottom subplots
+        #   when number of subplots in even.
         if row < x - 1:
             ax.set_xticks("", visible=False)
 
-        # make sure that the x ticks are visible also for column that will end
-        #   with uneven number of subplots
+        # Make sure that the x ticks are visible also for column that will end
+        #   with uneven number of subplots.
         if i == len(property_types) - 1:
             ax.set_xticks(x_ticks_)
 
-        # delete a subplot when it is empty
+        # Delete a subplot when it is empty.
         if is_odd and column and i == len(property_types) - 1:
             fig.delaxes(axes[-1][-1])
 
-    # add some description of whole plot and of each axis
+    # Add some description of whole plot and of each axis.
     fig.text(0.5, 0.94, f"{plot_title_type}", ha="center", fontsize=FONT_SIZE_TITLE)
     fig.text(0.5, 0.90, f"{plot_title_city}", ha="center", fontsize=FONT_SIZE)
     fig.text(0.06, 0.45, r"$\frac{Cena}{m^{2}}$ [CZK]", ha="center", fontsize=FONT_SIZE, rotation=90)
     fig.text(0.5, 0.02, "Čas [Měsíce]", ha="center", fontsize=FONT_SIZE)
 
-    # save as png img
+    # Save
     plt.savefig(f"result/{prefix} {plot_title_type}.png")
 
 
 def plot_all():
     """
-    Iterate through locations and types of properties to get plots for each type
+    Iterate through locations and types of properties to get plots for each type.
 
     :return: None
     """

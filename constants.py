@@ -64,7 +64,7 @@ BATCHES = "batches"
 ARCHIVE = "archive"
 FEATURES = "features"
 LINKS = "links_to_properties"
-DOWNLOADS = "C:/Users/lazni/Downloads"
+DOWNLOADS = "C:/Users/lazni/Downloads"  # todo: write it generally for all machines
 
 # csv datasets
 PROPERTIES = "links_to_properties/links_to_properties.csv"
