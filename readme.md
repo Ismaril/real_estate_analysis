@@ -31,12 +31,11 @@ Input: Sitemap of www.sreality.cz \
 Output: Plots / Data visualisation
 
 ## Limitation:
-Since the program has to scrape cca 60_000 sites, \
-scraping can take cca 50 hours. \
+- Not getting banned by domain as robot.
+- Since the program has to scrape cca 60_000 sites, scraping can take cca 50 hours.
 
 ## Todo:
 Below tasks are here not mandatory but nice to have.
-- Refactoring 
 - Multiprocessing?
 - Scheduling a task to run the program every month.
 
