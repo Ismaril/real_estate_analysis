@@ -42,3 +42,7 @@ Below tasks are here not mandatory but nice to have.
 ## Status of the project:
 Functional
 
+## Result:
+You can check all images/results in result directory
+
+![prabyt](https://raw.githubusercontent.com/Ismaril/real_estate_analysis/main/result/Pra%20BYT.png)
