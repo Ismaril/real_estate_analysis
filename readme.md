@@ -36,7 +36,7 @@ Output: Plots / Data visualisation
 
 ## Todo:
 Below tasks are here not mandatory but nice to have.
-- Multiprocessing?
+- Threading
 - Scheduling a task to run the program every month.
 
 ## Status of the project:
